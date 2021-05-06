@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        15 Dec 2020
+*  DATE:        02 May 2021
 *
 *  Common header file for the user interface.
 *
@@ -101,6 +101,7 @@ typedef enum _WOBJ_DIALOGS_ID {
     wobjW32SSTDlgId,
     wobjPsListDlgId,
     wobjDriversDlgId,
+    wobjUnloadedDriversDlgId,
     wobjCallbacksDlgId,
     wobjSLCacheDlgId,
     wobjPluginViewId,
@@ -307,25 +308,22 @@ static LPCWSTR g_szMonths[12] = {
     L"Dec"
 };
 
-#define wobjInitSuccess          0
-#define wobjInitNoHeap          -1
-#define wobjInitNoTemp          -2
-#define wobjInitNoWinDir        -3
-#define wobjInitNoSys32Dir      -4
-#define wobjInitNoProgDir       -5
+#define INIT_NO_ERROR               0
+#define INIT_ERROR_NOCRT            1
+#define INIT_ERROR_NOHEAP           2
+#define INIT_ERROR_NOTEMP           3
+#define INIT_ERROR_NOWINDIR         4
+#define INIT_ERROR_NOSYS32DIR       5
+#define INIT_ERROR_NOPROGDIR        6
+#define INIT_ERROR_NOCLASS          7
+#define INIT_ERROR_NOMAINWND        8
+#define INIT_ERROR_NOICCX           9
+#define INIT_ERROR_NOLISTWND        10
+#define INIT_ERROR_NOTREEWND        11
+#define INIT_ERROR_NOTLBARWND       12
+#define INIT_ERROR_UNSPECIFIED      13
 
 #define T_WOBJINIT_NOCRT TEXT("Could not initialize CRT, abort")
-#define T_WOBJINIT_NOHEAP TEXT("Could not initialize WinObjEx64, could not allocate heap")
-#define T_WOBJINIT_NOTEMP TEXT("Could not initialize WinObjEx64, could not locate %temp%")
-#define T_WOBJINIT_NOWINDIR TEXT("Could not initialize WinObjEx64, could not locate Windows directory")
-#define T_WOBJINIT_NOSYS32DIR TEXT("Could not initialize WinObjEx64, could not locate System32 directory")
-#define T_WOBJINIT_NOPROGDIR TEXT("Could not initialize WinObjEx64, could not query program directory")
-#define T_WOBJINIT_NOCLASS TEXT("Could not register WinObjEx64 window class, abort")
-#define T_WOBJINIT_NOMAINWINDOW TEXT("Could not create WinObjEx64 main window, abort")
-#define T_WOBJINIT_NOICCX TEXT("Could not initialize commctrl classes, abort")
-#define T_WOBJINIT_NOLISTWND TEXT("Could not create tree window, abort")
-#define T_WOBJINIT_NOTREEWND TEXT("Could not create list window, abort")
-#define T_WOBJINIT_NOTLBARWND TEXT("Could not create toolbar window, abort")
 
 #define ErrShadowWin32kNotFound             1
 #define ErrShadowMemAllocFail               2

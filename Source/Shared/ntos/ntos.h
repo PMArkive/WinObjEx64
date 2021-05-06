@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.165
+*  VERSION:     1.167
 *
-*  DATE:        26 Apr 2021
+*  DATE:        02 May 2021
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -5901,6 +5901,24 @@ typedef struct _KUSER_SHARED_DATA {
 /*
 ** KUSER_SHARED_DATA END
 */
+
+/*
+** MM UNLOADED DRIVERS START
+*/
+
+typedef struct _UNLOADED_DRIVERS {
+    UNICODE_STRING Name;
+    PVOID StartAddress;
+    PVOID EndAddress;
+    LARGE_INTEGER CurrentTime;
+} UNLOADED_DRIVERS, * PUNLOADED_DRIVERS;
+
+#define MI_UNLOADED_DRIVERS 50
+
+/*
+** MM UNLOADED DRIVERS END
+*/
+
 
 /*
 ** FLT MANAGER START

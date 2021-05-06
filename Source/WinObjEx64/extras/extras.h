@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        11 Dec 2020
+*  DATE:        02 May 2021
 *
 *  Common header file for Extras dialogs.
 *
@@ -53,13 +53,6 @@ typedef BOOL(CALLBACK *CustomNotifyFunction)(
     _In_ EXTRASCONTEXT *Context,
     _In_opt_ PVOID Parameter
     );
-
-BOOL extrasDlgHandleNotify(
-    _In_ LPNMLISTVIEW nhdr,
-    _In_ EXTRASCONTEXT *Context,
-    _In_ DlgCompareFunction CompareFunc,
-    _In_opt_ CustomNotifyFunction CustomHandler,
-    _In_opt_ PVOID CustomParameter);
 
 VOID extrasSimpleListResize(
     _In_ HWND hwndDlg);

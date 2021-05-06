@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        15 Mar 2021
+*  DATE:        02 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -822,6 +822,25 @@ PVOID supGetTokenInfo(
     }
 
     return Buffer;
+}
+
+/*
+* supGetLoadedModulesList
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+* 
+* Returned buffer must be freed with supHeapFree after usage.
+*
+*/
+PVOID supGetLoadedModulesList(
+    _Out_opt_ PULONG ReturnLength
+)
+{
+    return ntsupGetLoadedModulesListEx(ReturnLength,
+        supHeapAlloc,
+        supHeapFree);
 }
 
 /*
@@ -7354,4 +7373,95 @@ ULONG supAddLVColumnsFromArray(
     }   
 
     return iColumn;
+}
+
+/*
+* supShowInitError
+*
+* Purpose:
+*
+* Display initialization error depending on it type.
+*
+*/
+VOID supShowInitError(
+    _In_ DWORD ErrorType
+)
+{
+    WCHAR szErrorBuffer[MAX_PATH * 2];
+    LPWSTR lpError;
+
+    //
+    // CRT not initialized, no fancy swprinfs for you.
+    //
+    if (ErrorType == INIT_ERROR_NOCRT) {
+
+        MessageBox(GetDesktopWindow(), 
+            (LPCWSTR)T_WOBJINIT_NOCRT, 
+            (LPCWSTR)PROGRAM_NAME, 
+            MB_ICONWARNING | MB_OK);
+
+        return;
+    }
+
+    switch (ErrorType) {
+
+    case INIT_ERROR_NOHEAP:
+        lpError = L"Heap not allocated";
+        break;
+
+    case INIT_ERROR_NOTEMP:
+        lpError = L"%temp% not resolved";
+        break;
+
+    case INIT_ERROR_NOWINDIR:
+        lpError = L"Windows directory not resolved";
+        break;
+
+    case INIT_ERROR_NOSYS32DIR:
+        lpError = L"System32 directory not resolved";
+        break;
+
+    case INIT_ERROR_NOPROGDIR:
+        lpError = L"Program directory not resolved";
+        break;
+
+    case INIT_ERROR_NOCLASS:
+        lpError = L"Main window class not registered";
+        break;
+
+    case INIT_ERROR_NOMAINWND:
+        lpError = L"Main window not created";
+        break;
+
+    case INIT_ERROR_NOICCX:
+        lpError = L"Common Controls Library";
+        break;
+
+    case INIT_ERROR_NOLISTWND:
+        lpError = L"Main list window not created";
+        break;
+
+    case INIT_ERROR_NOTREEWND:
+        lpError = L"Main tree window not created";
+        break;
+
+    case INIT_ERROR_NOTLBARWND:
+        lpError = L"Main toolbar window not created";
+        break;
+
+    default:
+        lpError = L"Unknown initialization error";
+        break;
+    }
+
+    RtlStringCchPrintfSecure(szErrorBuffer, 
+        MAX_PATH * 2, 
+        TEXT("WinObjEx64 failed to initialize: %ws, abort"), 
+        lpError);
+    
+    MessageBox(GetDesktopWindow(), 
+        (LPWSTR)szErrorBuffer, 
+        (LPCWSTR)PROGRAM_NAME, 
+        MB_ICONWARNING | MB_OK);
+
 }

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        15 Mar 2021
+*  DATE:        02 May 2021
 *
 *  Common header file for the program support routines.
 *
@@ -171,12 +171,14 @@ typedef struct tagVERHEAD {
 // Use shared NTSUP forward.
 //
 
+#define supGetSystemInfoEx ntsupGetSystemInfoEx
 #define supVirtualAllocEx ntsupVirtualAllocEx
 #define supVirtualAlloc ntsupVirtualAlloc
 #define supVirtualFree ntsupVirtualFree
 #define supEnablePrivilege ntsupEnablePrivilege
 #define supGetCurrentProcessToken ntsupGetCurrentProcessToken
 #define supQuerySystemRangeStart ntsupQuerySystemRangeStart
+#define supQueryUserModeAccessibleRange ntsupQueryUserModeAccessibleRange
 #define supIsProcess32bit ntsupIsProcess32bit
 #define supQueryThreadWin32StartAddress ntsupQueryThreadWin32StartAddress
 #define supOpenDirectory ntsupOpenDirectory
@@ -371,6 +373,9 @@ BOOL supQueryProcessNameByEPROCESS(
 PVOID supGetTokenInfo(
     _In_ HANDLE TokenHandle,
     _In_ TOKEN_INFORMATION_CLASS TokenInformationClass,
+    _Out_opt_ PULONG ReturnLength);
+
+PVOID supGetLoadedModulesList(
     _Out_opt_ PULONG ReturnLength);
 
 PVOID supGetSystemInfo(
@@ -785,3 +790,6 @@ ULONG supAddLVColumnsFromArray(
     _In_ HWND ListView,
     _In_ PLVCOLUMNS_DATA ColumnsData,
     _In_ ULONG NumberOfColumns);
+
+VOID supShowInitError(
+    _In_ DWORD ErrorType);

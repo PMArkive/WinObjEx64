@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTSUP.C
 *
-*  VERSION:     2.05
+*  VERSION:     2.06
 *
-*  DATE:        14 Jan 2021
+*  DATE:        01 May 2021
 *
 *  Native API support functions.
 *
@@ -495,6 +495,48 @@ ULONG_PTR ntsupQuerySystemRangeStart(
 }
 
 /*
+* ntsupQueryUserModeAccessibleRange
+*
+* Purpose:
+*
+* Return user mode applications accessible address range.
+*
+*/
+BOOLEAN ntsupQueryUserModeAccessibleRange(
+    _Out_ PULONG_PTR MinimumUserModeAddress,
+    _Out_ PULONG_PTR MaximumUserModeAddress
+)
+{
+    NTSTATUS  ntStatus;
+    ULONG     memIO = 0;
+    SYSTEM_BASIC_INFORMATION sysBasicInfo;
+
+    RtlZeroMemory(&sysBasicInfo, sizeof(sysBasicInfo));
+
+    ntStatus = NtQuerySystemInformation(
+        SystemBasicInformation,
+        (PVOID)&sysBasicInfo,
+        sizeof(sysBasicInfo),
+        &memIO);
+
+    if (NT_SUCCESS(ntStatus)) {
+
+        *MinimumUserModeAddress = sysBasicInfo.MinimumUserModeAddress;
+        *MaximumUserModeAddress = sysBasicInfo.MaximumUserModeAddress;
+
+        return TRUE;
+    }
+    else {
+
+        *MinimumUserModeAddress = 0;
+        *MaximumUserModeAddress = 0;
+
+    }
+
+    return FALSE;
+}
+
+/*
 * ntsupIsKdEnabled
 *
 * Purpose:
@@ -593,7 +635,91 @@ BOOL ntsupIsProcess32bit(
 }
 
 /*
-* supGetSystemInfoEx
+* ntsupGetLoadedModulesListEx
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+*
+*/
+PVOID ntsupGetLoadedModulesListEx(
+    _Out_opt_ PULONG ReturnLength,
+    _In_ PNTSUPMEMALLOC AllocMem,
+    _In_ PNTSUPMEMFREE FreeMem
+)
+{
+    NTSTATUS    ntStatus;
+    PVOID       buffer;
+    ULONG       bufferSize = PAGE_SIZE;
+
+    PRTL_PROCESS_MODULES pvModules;
+
+    if (ReturnLength)
+        *ReturnLength = 0;
+
+    buffer = AllocMem((SIZE_T)bufferSize);
+    if (buffer == NULL)
+        return NULL;
+
+    ntStatus = NtQuerySystemInformation(
+        SystemModuleInformation,
+        buffer,
+        bufferSize,
+        &bufferSize);
+
+    if (ntStatus == STATUS_INFO_LENGTH_MISMATCH) {
+        FreeMem(buffer);
+        buffer = AllocMem((SIZE_T)bufferSize);
+
+        ntStatus = NtQuerySystemInformation(
+            SystemModuleInformation,
+            buffer,
+            bufferSize,
+            &bufferSize);
+    }
+
+    if (ReturnLength)
+        *ReturnLength = bufferSize;
+
+    if (ntStatus == STATUS_BUFFER_OVERFLOW) {
+
+        pvModules = (PRTL_PROCESS_MODULES)buffer;
+        if (pvModules->NumberOfModules != 0)
+            return buffer;
+    }
+
+    if (NT_SUCCESS(ntStatus)) {
+        return buffer;
+    }
+
+    if (buffer)
+        FreeMem(buffer);
+
+    return NULL;
+}
+
+/*
+* ntsupGetSystemInfoEx
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+*
+* Returned buffer must be freed with ntsupHeapFree after usage.
+*
+*/
+PVOID ntsupGetLoadedModulesList(
+    _Out_opt_ PULONG ReturnLength
+)
+{
+    return ntsupGetLoadedModulesListEx(
+        ReturnLength,
+        (PNTSUPMEMALLOC)ntsupHeapAlloc,
+        (PNTSUPMEMFREE)ntsupHeapFree);
+}
+
+/*
+* ntsupGetSystemInfoEx
 *
 * Purpose:
 *
@@ -636,9 +762,10 @@ PVOID ntsupGetSystemInfoEx(
         buffer = AllocMem((SIZE_T)bufferSize);
     }
 
+    if (ReturnLength)
+        *ReturnLength = returnedLength;
+
     if (NT_SUCCESS(ntStatus)) {
-        if (ReturnLength)
-            *ReturnLength = returnedLength;
         return buffer;
     }
 
@@ -669,7 +796,6 @@ PVOID ntsupGetSystemInfo(
         (PNTSUPMEMALLOC)ntsupHeapAlloc,
         (PNTSUPMEMFREE)ntsupHeapFree);
 }
-
 
 /*
 * ntsupResolveSymbolicLink

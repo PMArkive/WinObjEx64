@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        16 Jan 2021
+*  DATE:        02 May 2021
 *
 *  Common header file for the Windows Object Explorer.
 *
@@ -85,8 +85,10 @@
 #include "resource.h"
 #include "sdk/extdef.h"
 #include "wine.h"
-#include "minirtl\minirtl.h"
-#include "minirtl\rtltypes.h"
+
+#include "minirtl/minirtl.h"
+#include "minirtl/rtltypes.h"
+
 #include "ntos\ntos.h"
 #include "ntos\ntalpc.h"
 #include "ntos\ntsup.h"

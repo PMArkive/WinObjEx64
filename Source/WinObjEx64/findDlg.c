@@ -514,6 +514,7 @@ INT_PTR CALLBACK FindDlgProc(
         default:
             break;
         }
+        break;
 
     case WM_CONTEXTMENU:
 

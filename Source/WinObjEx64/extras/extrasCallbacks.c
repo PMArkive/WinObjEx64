@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        26 Apr 2021
+*  DATE:        02 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -2031,7 +2031,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindExpCallbackListHead)
     hde64s hs;
 
     ULONG_PTR NtOsBase = (ULONG_PTR)g_kdctx.NtOsBase;
-    HMODULE hNtOs = g_kdctx.NtOsImageMap;
+    HMODULE hNtOs = (HMODULE)g_kdctx.NtOsImageMap;
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
@@ -2125,7 +2125,7 @@ HTREEITEM AddParentEntryToList(
     szAddress[1] = L'x';
     szAddress[2] = 0;
     u64tohex(CallbackObjectAddress, &szAddress[2]);
-    TreeListSubItems.Text[0] = L'\0';
+    TreeListSubItems.Text[0] = T_EmptyString;
     TreeListSubItems.Text[1] = lpCallbackObjectType;
 
     return supTreeListAddItem(
@@ -4199,8 +4199,10 @@ VOID extrasCreateCallbacksDialog(
         &CallbacksDialogProc,
         (LPARAM)pDlgContext);
 
-    if (hwndDlg == NULL)
+    if (hwndDlg == NULL) {
+        supHeapFree(pDlgContext);
         return;
+    }
 
     pDlgContext->hwndDlg = hwndDlg;
     g_WinObj.AuxDialogs[wobjCallbacksDlgId] = hwndDlg;

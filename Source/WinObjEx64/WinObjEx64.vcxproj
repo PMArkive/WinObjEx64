@@ -128,11 +128,8 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <ExpandAttributedSource>true</ExpandAttributedSource>
       <AssemblerOutput>All</AssemblerOutput>
-      <BrowseInformation>true</BrowseInformation>
       <CompileAs>CompileAsC</CompileAs>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(SolutionDir)\Shared;$(ProjectDir);$(ProjectDir)\props;$(ProjectDir)\extras</AdditionalIncludeDirectories>
@@ -162,20 +159,16 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <ExpandAttributedSource>true</ExpandAttributedSource>
-      <BrowseInformation>true</BrowseInformation>
-      <CompileAs>CompileAsCpp</CompileAs>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(SolutionDir)\Shared;$(ProjectDir);$(ProjectDir)\props;$(ProjectDir)\extras</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USE_OWN_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <Version>6.0</Version>
-      <SuppressStartupBanner>false</SuppressStartupBanner>
       <GenerateMapFile>true</GenerateMapFile>
       <MapExports>true</MapExports>
       <EntryPointSymbol>
@@ -264,7 +257,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)\Shared;$(ProjectDir);$(ProjectDir)\props;$(ProjectDir)\extras</AdditionalIncludeDirectories>
       <EnablePREfast>true</EnablePREfast>
       <ControlFlowGuard>Guard</ControlFlowGuard>
-      <CompileAs>CompileAsC</CompileAs>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

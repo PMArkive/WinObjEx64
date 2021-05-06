@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        26 Apr 2021
+*  DATE:        02 May 2021
 *
 *  Common header file for the Kernel Debugger Driver support.
 *
@@ -121,6 +121,10 @@ typedef struct _KLDBGCONTEXT {
     //system range start
     ULONG_PTR SystemRangeStart;
 
+    //min/max user address
+    ULONG_PTR MinimumUserModeAddress;
+    ULONG_PTR MaximumUserModeAddress;
+
     //objects collection
     OBJECT_COLLECTION ObCollection;
 
@@ -218,7 +222,7 @@ typedef struct _OBJREF {
 #define NT_WIN10_21H1           19043
 
 // Windows 10 Active Develepment Branch (21XX)
-#define NTX_WIN10_ADB           21286
+#define NTX_WIN10_ADB           21359
 
 //
 // Defines for boundary descriptors
@@ -287,6 +291,13 @@ typedef BOOL(CALLBACK *PENUMERATE_BOUNDARY_DESCRIPTOR_CALLBACK)(
     _In_ OBJECT_BOUNDARY_ENTRY *Entry,
     _In_opt_ PVOID Context
     );
+
+NTSTATUS ObIsValidUnicodeString(
+    _In_ PCUNICODE_STRING SourceString);
+
+NTSTATUS ObIsValidUnicodeStringEx(
+    _In_ PCUNICODE_STRING SourceString,
+    _In_ DWORD dwFlags);
 
 NTSTATUS ObCopyBoundaryDescriptor(
     _In_ OBJECT_NAMESPACE_ENTRY *NamespaceLookupEntry,
@@ -436,6 +447,10 @@ BOOLEAN kdQueryKernelShims(
     _In_ PKLDBGCONTEXT Context,
     _In_ BOOLEAN RefreshList);
 
+BOOLEAN kdQueryMmUnloadedDrivers(
+    _In_ PKLDBGCONTEXT Context,
+    _Out_ PVOID* UnloadedDrivers);
+
 /*
 * ObGetObjectFastReference
 *
@@ -464,6 +479,21 @@ __forceinline BOOL kdAddressInNtOsImage(
     return IN_REGION(Address,
         g_kdctx.NtOsBase,
         g_kdctx.NtOsSize);
+}
+
+/*
+* kdAddressInUserModeRange
+*
+* Purpose:
+*
+* Test if given address in user mode accessible range.
+*
+*/
+__forceinline BOOL kdAddressInUserModeRange(
+    _In_ PVOID Address)
+{
+    return ((ULONG_PTR)Address >= g_kdctx.MinimumUserModeAddress &&
+        (ULONG_PTR)Address < g_kdctx.MaximumUserModeAddress);
 }
 
 /*
