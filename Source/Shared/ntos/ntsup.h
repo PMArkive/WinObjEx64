@@ -6,7 +6,7 @@
 *
 *  VERSION:     2.06
 *
-*  DATE:        01 May 2021
+*  DATE:        02 May 2021
 *
 *  Common header file for the NT API support functions and definitions.
 *
@@ -137,6 +137,14 @@ BOOLEAN ntsupQueryUserModeAccessibleRange(
 
 BOOL ntsupIsProcess32bit(
     _In_ HANDLE hProcess);
+
+PVOID ntsupGetLoadedModulesList2Ex(
+    _Out_opt_ PULONG ReturnLength,
+    _In_ PNTSUPMEMALLOC AllocMem,
+    _In_ PNTSUPMEMFREE FreeMem);
+
+PVOID ntsupGetLoadedModulesList2(
+    _Out_opt_ PULONG ReturnLength);
 
 PVOID ntsupGetLoadedModulesListEx(
     _Out_opt_ PULONG ReturnLength,

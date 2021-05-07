@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2015 - 2020
+*  (C) COPYRIGHT AUTHORS, 2015 - 2021
 *
 *  TITLE:       PROPDLG.C
 *
 *  VERSION:     1.88
 *
-*  DATE:        04 Dec 2020
+*  DATE:        02 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -15,6 +15,7 @@
 *
 *******************************************************************************/
 #include "global.h"
+#include "propAlpcPort.h"
 #include "propBasic.h"
 #include "propType.h"
 #include "propDriver.h"
@@ -828,6 +829,23 @@ VOID propCreateDialog(
         Page.lParam = (LPARAM)propContext;
         psp[nPages++] = CreatePropertySheetPage(&Page);
         break;
+    }
+
+    //
+    // Add ALPC port specific page, driver assistance required.
+    //
+    if (propContext->TypeIndex == ObjectTypePort &&
+        g_kdctx.DeviceHandle != NULL) 
+    {
+        RtlSecureZeroMemory(&Page, sizeof(Page));
+        Page.dwSize = sizeof(PROPSHEETPAGE);
+        Page.dwFlags = PSP_DEFAULT | PSP_USETITLE;
+        Page.hInstance = g_WinObj.hInstance;
+        Page.pszTemplate = MAKEINTRESOURCE(IDD_PROP_ALPCPORTLIST);
+        Page.pfnDlgProc = AlpcPortListDialogProc;
+        Page.pszTitle = TEXT("Connections");
+        Page.lParam = (LPARAM)propContext;
+        psp[nPages++] = CreatePropertySheetPage(&Page);
     }
 
     //

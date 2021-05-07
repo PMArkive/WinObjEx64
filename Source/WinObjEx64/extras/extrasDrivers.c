@@ -302,8 +302,6 @@ INT CALLBACK DrvDlgCompareFunc(
     _In_ LPARAM lParamSort
 )
 {
-    INT nResult = 0;
-
     EXTRASCONTEXT* pDlgContext = (EXTRASCONTEXT*)lParamSort;
 
     if (pDlgContext == NULL)
@@ -365,7 +363,7 @@ INT CALLBACK DrvDlgCompareFunc(
         }
     }
 
-    return nResult;
+    return 0;
 }
 
 /*

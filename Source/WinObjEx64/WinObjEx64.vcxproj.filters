@@ -237,6 +237,9 @@
     <ClCompile Include="sdviewDlg.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="props\propAlpcPort.c">
+      <Filter>Source Files\props</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc">
@@ -426,6 +429,9 @@
     </ClInclude>
     <ClInclude Include="sdviewDlg.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="props\propAlpcPort.h">
+      <Filter>Source Files\props</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

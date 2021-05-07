@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        11 Dec 2020
+*  DATE:        02 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -1390,7 +1390,7 @@ VOID propObDumpDriverObject(
             &subitems);
 
         RtlSecureZeroMemory(&ntosEntry, sizeof(ntosEntry));
-        pModules = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+        pModules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
 
         if (g_kdctx.IopInvalidDeviceRequest == NULL)
             g_kdctx.IopInvalidDeviceRequest = kdQueryIopInvalidDeviceRequest();
@@ -3075,7 +3075,7 @@ VOID propObDumpObjectType(
         //
         // Get loaded modules list.
         //
-        ModulesList = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+        ModulesList = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
         if (ModulesList == NULL)
             break;
 
@@ -3461,7 +3461,7 @@ VOID propObDumpFltServerPort(
             return;
         }
 
-        pModules = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+        pModules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
         if (pModules == NULL) {
             propObDumpShowError(hwndDlg, NULL);
             return;
@@ -4049,7 +4049,7 @@ VOID propObDumpCallback(
     //
     // Create a snapshot list of loaded modules.
     //
-    Modules = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+    Modules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
     if (Modules == NULL) {
         propObDumpShowError(hwndDlg, NULL);
         return;
@@ -4245,7 +4245,7 @@ VOID propObDumpSymbolicLink(
 
     if (IsCallbackLink) {
 
-        pModules = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+        pModules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
         if (pModules) {
 
             propObDumpAddressWithModule(g_TreeList, h_tviRootItem, TEXT("Callback"),

@@ -3883,7 +3883,7 @@ VOID DisplayCallbacksList(
 
     __try {
 
-        Modules = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+        Modules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
         if (Modules == NULL) {
             lpStatusMsg = TEXT("Could not allocate memory for modules list!");
             supStatusBarSetText(StatusBar, 1, lpStatusMsg);

@@ -6,7 +6,7 @@
 *
 *  VERSION:     2.06
 *
-*  DATE:        01 May 2021
+*  DATE:        02 May 2021
 *
 *  Native API support functions.
 *
@@ -635,6 +635,90 @@ BOOL ntsupIsProcess32bit(
 }
 
 /*
+* ntsupGetLoadedModulesList2Ex
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+*
+*/
+PVOID ntsupGetLoadedModulesList2Ex(
+    _Out_opt_ PULONG ReturnLength,
+    _In_ PNTSUPMEMALLOC AllocMem,
+    _In_ PNTSUPMEMFREE FreeMem
+)
+{
+    NTSTATUS    ntStatus;
+    PVOID       buffer;
+    ULONG       bufferSize = PAGE_SIZE;
+
+    PRTL_PROCESS_MODULES pvModules;
+
+    if (ReturnLength)
+        *ReturnLength = 0;
+
+    buffer = AllocMem((SIZE_T)bufferSize);
+    if (buffer == NULL)
+        return NULL;
+
+    ntStatus = NtQuerySystemInformation(
+        SystemModuleInformationEx,
+        buffer,
+        bufferSize,
+        &bufferSize);
+
+    if (ntStatus == STATUS_INFO_LENGTH_MISMATCH) {
+        FreeMem(buffer);
+        buffer = AllocMem((SIZE_T)bufferSize);
+
+        ntStatus = NtQuerySystemInformation(
+            SystemModuleInformationEx,
+            buffer,
+            bufferSize,
+            &bufferSize);
+    }
+
+    if (ReturnLength)
+        *ReturnLength = bufferSize;
+
+    if (ntStatus == STATUS_BUFFER_OVERFLOW) {
+
+        pvModules = (PRTL_PROCESS_MODULES)buffer;
+        if (pvModules->NumberOfModules != 0)
+            return buffer;
+    }
+
+    if (NT_SUCCESS(ntStatus)) {
+        return buffer;
+    }
+
+    if (buffer)
+        FreeMem(buffer);
+
+    return NULL;
+}
+
+/*
+* ntsupGetLoadedModulesList2
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+*
+* Returned buffer must be freed with ntsupHeapFree after usage.
+*
+*/
+PVOID ntsupGetLoadedModulesList2(
+    _Out_opt_ PULONG ReturnLength
+)
+{
+    return ntsupGetLoadedModulesList2Ex(
+        ReturnLength,
+        (PNTSUPMEMALLOC)ntsupHeapAlloc,
+        (PNTSUPMEMFREE)ntsupHeapFree);
+}
+
+/*
 * ntsupGetLoadedModulesListEx
 *
 * Purpose:
@@ -681,8 +765,20 @@ PVOID ntsupGetLoadedModulesListEx(
     if (ReturnLength)
         *ReturnLength = bufferSize;
 
+    //
+    // Handle unexpected return.
+    //
+    // If driver image path exceeds structure field size then 
+    // RtlUnicodeStringToAnsiString will throw STATUS_BUFFER_OVERFLOW.
+    // 
+    // If this is the last driver in the enumeration service will return 
+    // valid data but STATUS_BUFFER_OVERFLOW in result.
+    //
     if (ntStatus == STATUS_BUFFER_OVERFLOW) {
 
+        //
+        // Force ignore this status if list is not empty.
+        //
         pvModules = (PRTL_PROCESS_MODULES)buffer;
         if (pvModules->NumberOfModules != 0)
             return buffer;
@@ -699,7 +795,7 @@ PVOID ntsupGetLoadedModulesListEx(
 }
 
 /*
-* ntsupGetSystemInfoEx
+* ntsupGetLoadedModulesList
 *
 * Purpose:
 *

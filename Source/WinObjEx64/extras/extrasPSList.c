@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        11 Dec 2020
+*  DATE:        02 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -803,7 +803,7 @@ DWORD WINAPI CreateThreadListProc(
             if (!supQueryProcessEntryById(UniqueProcessId, ProcessList, &Process))
                 __leave;
 
-            pModules = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+            pModules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
 
             ThreadCount = Process->ThreadCount;
             stl = (OBEX_THREAD_LOOKUP_ENTRY*)supHeapAlloc(ThreadCount * sizeof(OBEX_THREAD_LOOKUP_ENTRY));

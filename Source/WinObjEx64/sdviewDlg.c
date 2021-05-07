@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        14 Jan 2021
+*  DATE:        02 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -1246,5 +1246,8 @@ VOID SDViewDialogCreate(
                 LocalFree((HLOCAL)lpText);
             }
         }
+    }
+    else {
+        supHeapFree(SDViewContext);
     }
 }

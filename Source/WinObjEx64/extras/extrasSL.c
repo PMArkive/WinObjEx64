@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        11 Dec 2020
+*  DATE:        02 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -576,6 +576,7 @@ VOID extrasCreateSLCacheDialog(
         (LPARAM)pDlgContext);
 
     if (hwndDlg == NULL) {
+        supHeapFree(pDlgContext);
         return;
     }
 

@@ -1640,20 +1640,21 @@ VOID supShutdown(
 }
 
 /*
-* supQueryProcessNameByEPROCESS
+* supQueryProcessNameAndPidByEPROCESS
 *
 * Purpose:
 *
-* Lookups process name by given process object address.
+* Lookups process name and PID by given process object address.
 *
 * If nothing found return FALSE.
 *
 */
-BOOL supQueryProcessNameByEPROCESS(
-    _In_ ULONG_PTR ValueOfEPROCESS,
+BOOL supQueryProcessNameAndPidByEPROCESS(
+    _In_ ULONG_PTR ProcessObject,
     _In_ PVOID ProcessList,
-    _Inout_ LPWSTR Buffer,
-    _In_ DWORD ccBuffer //size of buffer in chars
+    _Out_opt_ PHANDLE ProcessId,
+    _Inout_ LPWSTR NameBuffer,
+    _In_ DWORD BufferLength //size of buffer in chars
 )
 {
     BOOL bFound = FALSE;
@@ -1669,6 +1670,9 @@ BOOL supQueryProcessNameByEPROCESS(
     } List;
 
     List.ListRef = (PBYTE)ProcessList;
+
+    if (ProcessId)
+        *ProcessId = NULL;
 
     //
     // Calculate process handle list size.
@@ -1725,13 +1729,16 @@ BOOL supQueryProcessNameByEPROCESS(
                 if (pHandles->Handles[i].UniqueProcessId == (ULONG_PTR)CurrentProcessId) //current process id
                     for (j = 0; j < ProcessListCount; j++)
                         if (pHandles->Handles[i].HandleValue == (ULONG_PTR)SavedProcessList[j].hProcess) //same handle value
-                            if ((ULONG_PTR)pHandles->Handles[i].Object == ValueOfEPROCESS) { //save object value
+                            if ((ULONG_PTR)pHandles->Handles[i].Object == ProcessObject) { //save object value
 
                                 List.ListRef = SavedProcessList[j].EntryPtr;
 
+                                if (ProcessId)
+                                    *ProcessId = List.Processes->UniqueProcessId;
+
                                 _strncpy(
-                                    Buffer,
-                                    ccBuffer,
+                                    NameBuffer,
+                                    BufferLength,
                                     List.Processes->ImageName.Buffer,
                                     List.Processes->ImageName.Length / sizeof(WCHAR));
 
@@ -1754,6 +1761,30 @@ BOOL supQueryProcessNameByEPROCESS(
     }
 
     return bFound;
+}
+
+/*
+* supQueryProcessNameByEPROCESS
+*
+* Purpose:
+*
+* Lookups process name by given process object address.
+*
+* If nothing found return FALSE.
+*
+*/
+BOOL supQueryProcessNameByEPROCESS(
+    _In_ ULONG_PTR ProcessObject,
+    _In_ PVOID ProcessList,
+    _Inout_ LPWSTR NameBuffer,
+    _In_ DWORD BufferLength //size of buffer in chars
+)
+{
+     return supQueryProcessNameAndPidByEPROCESS(ProcessObject,
+         ProcessList,
+         NULL,
+         NameBuffer,
+         BufferLength);
 }
 
 /*

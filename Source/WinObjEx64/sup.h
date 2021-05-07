@@ -364,11 +364,18 @@ BOOL supQueryWinstationDescription(
     _Inout_	LPWSTR Buffer,
     _In_ DWORD ccBuffer);
 
-BOOL supQueryProcessNameByEPROCESS(
-    _In_ ULONG_PTR ValueOfEPROCESS,
+BOOL supQueryProcessNameAndPidByEPROCESS(
+    _In_ ULONG_PTR ProcessObject,
     _In_ PVOID ProcessList,
-    _Inout_ LPWSTR Buffer,
-    _In_ DWORD ccBuffer);
+    _Out_opt_ PHANDLE ProcessId,
+    _Inout_ LPWSTR NameBuffer,
+    _In_ DWORD BufferLength);
+
+BOOL supQueryProcessNameByEPROCESS(
+    _In_ ULONG_PTR ProcessObject,
+    _In_ PVOID ProcessList,
+    _Inout_ LPWSTR NameBuffer,
+    _In_ DWORD BufferLength);
 
 PVOID supGetTokenInfo(
     _In_ HANDLE TokenHandle,

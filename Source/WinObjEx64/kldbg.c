@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        15 Mar 2021
+*  DATE:        02 May 2021
 *
 *  MINIMUM SUPPORTED OS WINDOWS 7
 *
@@ -1447,6 +1447,76 @@ BOOLEAN ObpFindHeaderCookie(
 }
 
 /*
+* ObpFindProcessObjectOffsets
+*
+* Purpose:
+*
+* Extract EPROCESS offsets from ntoskrnl routines.
+*
+*/
+BOOLEAN ObpFindProcessObjectOffsets(
+    _In_ PKLDBGCONTEXT Context
+)
+{
+    BOOLEAN bResult = FALSE;
+    PBYTE   ptrCode;
+
+    ULONG_PTR NtOsBase;
+    HMODULE hNtOs;
+
+    hde64s  hs;
+
+    __try {
+
+        Context->PsUniqueProcessId.Valid = FALSE;
+        Context->PsProcessImageName.Valid = FALSE;
+
+        NtOsBase = (ULONG_PTR)Context->NtOsBase;
+        hNtOs = (HMODULE)Context->NtOsImageMap;
+
+        do {
+
+            ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetProcessId");
+            if (ptrCode == NULL)
+                break;
+
+            hde64_disasm((void*)(ptrCode), &hs);
+            if (hs.flags & F_ERROR)
+                break;
+
+            if (hs.len != 7)
+                break;
+
+            Context->PsUniqueProcessId.OffsetValue = *(PULONG)(ptrCode + 3);
+            Context->PsUniqueProcessId.Valid = TRUE;
+
+            ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetProcessImageFileName");
+            if (ptrCode == NULL)
+                break;
+
+            hde64_disasm((void*)(ptrCode), &hs);
+            if (hs.flags & F_ERROR)
+                break;
+
+            if (hs.len != 7)
+                break;
+
+            Context->PsProcessImageName.OffsetValue = *(PULONG)(ptrCode + 3);
+            Context->PsProcessImageName.Valid = TRUE;
+
+            bResult = (Context->PsUniqueProcessId.Valid && Context->PsProcessImageName.Valid);
+
+        } while (FALSE);
+
+    }
+    __except (WOBJ_EXCEPTION_FILTER_LOG) {
+        return FALSE;
+    }
+
+    return bResult;
+}
+
+/*
 * ObFindPrivateNamespaceLookupTable2
 *
 * Purpose:
@@ -2292,6 +2362,64 @@ BOOL ObDumpTypeInfo(
         ObjectTypeInfo,
         sizeof(OBJECT_TYPE_COMPATIBLE),
         NULL);
+}
+
+/*
+* ObGetProcessId
+*
+* Purpose:
+*
+* Read UniqueProcessId field from object of Process type.
+*
+*/
+BOOL ObGetProcessId(
+    _In_ ULONG_PTR ProcessObject,
+    _Out_ PHANDLE UniqueProcessId
+)
+{
+    ULONG_PTR kernelAddress;
+    HANDLE processId = 0;
+
+    *UniqueProcessId = NULL;
+
+    if (g_kdctx.PsUniqueProcessId.Valid == FALSE)
+        return FALSE;
+
+    kernelAddress = ProcessObject + g_kdctx.PsUniqueProcessId.OffsetValue;
+
+    if (!kdReadSystemMemory(kernelAddress, &processId, sizeof(processId)))
+        return FALSE;
+
+    *UniqueProcessId = processId;
+
+    return TRUE;
+}
+
+/*
+* ObGetProcessImageFileName
+*
+* Purpose:
+*
+* Read ImageFileName field from object of Process type.
+*
+*/
+BOOL ObGetProcessImageFileName(
+    _In_ ULONG_PTR ProcessObject,
+    _Out_ PUNICODE_STRING ImageFileName
+)
+{
+    ULONG_PTR kernelAddress;
+    CHAR szImageFileName[16];
+
+    if (g_kdctx.PsProcessImageName.Valid == FALSE)
+        return FALSE;
+
+    kernelAddress = ProcessObject + g_kdctx.PsProcessImageName.OffsetValue;
+
+    if (!kdReadSystemMemory(kernelAddress, &szImageFileName, sizeof(szImageFileName)))
+        return FALSE;
+
+    return NT_SUCCESS(ntsupConvertToUnicode(szImageFileName, ImageFileName));
 }
 
 /*
@@ -3311,7 +3439,7 @@ BOOL kdQuerySystemInformation(
             Context->MaximumUserModeAddress = 0x00007FFFFFFEFFFF;
         }
 
-        SystemModules = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+        SystemModules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
         if (SystemModules == NULL)
             break;
 
@@ -3635,7 +3763,7 @@ BOOLEAN kdQueryMmUnloadedDrivers(
         pvDrivers = (PUNLOADED_DRIVERS)supHeapAlloc(cbData);
         if (pvDrivers) {
 
-            if (!kdpReadSystemMemoryEx(kernelAddress, pvDrivers, cbData, &bytesRead))
+            if (!kdReadSystemMemoryEx(kernelAddress, pvDrivers, cbData, &bytesRead))
                 break;
 
             bResult = TRUE;
@@ -3651,7 +3779,7 @@ BOOLEAN kdQueryMmUnloadedDrivers(
                     bytesRead = wMax;
                     *pwStaticBuffer = 0;
 
-                    if (!kdpReadSystemMemoryEx(kernelAddress,
+                    if (!kdReadSystemMemoryEx(kernelAddress,
                         pwStaticBuffer,
                         bytesRead,
                         &bytesRead))
@@ -3911,6 +4039,11 @@ VOID kdInit(
     //
     if (IsFullAdmin == FALSE)
         return;
+
+    //
+    // Find EPROCESS offsets.
+    //
+    ObpFindProcessObjectOffsets(&g_kdctx);
 
     //
     // Helper drivers does not need DEBUG mode.

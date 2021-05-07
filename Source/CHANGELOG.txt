@@ -1,3 +1,5 @@
+added List of ALPC port connections (similar to !alpc /lpc windbg command)
+added MmUnloadedDrivers list
 added ExCreateCallback list to the callbacks list (PR #26)
 
 v1.8.8

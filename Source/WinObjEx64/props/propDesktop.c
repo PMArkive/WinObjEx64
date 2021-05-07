@@ -261,7 +261,7 @@ VOID DesktopListCreate(
 *
 * Purpose:
 *
-* Desktop page listview comparer function.
+* Listview comparer function.
 *
 */
 INT CALLBACK DesktopListCompareFunc(
@@ -288,7 +288,7 @@ INT CALLBACK DesktopListCompareFunc(
 *
 * Purpose:
 *
-* Desktop properies double click handler.
+* Properies double click handler.
 *
 */
 VOID DesktopListShowProperties(
@@ -344,7 +344,7 @@ VOID DesktopListShowProperties(
 *
 * Purpose:
 *
-* WM_NOTIFY processing for Desktop page listview.
+* WM_NOTIFY processing for page listview.
 *
 */
 BOOL DesktopListHandleNotify(

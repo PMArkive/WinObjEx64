@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        14 Jan 2021
+*  DATE:        01 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -535,6 +535,10 @@ VOID AboutDialogCollectGlobals(
     AddParameterValue64Hex(hwndOutput, TEXT("PrivateNamespaceLookupTable"), (ULONG_PTR)g_kdctx.PrivateNamespaceLookupTable);
 
     AddParameterValue64Hex(hwndOutput, TEXT("SystemRangeStart"), (ULONG_PTR)g_kdctx.SystemRangeStart);
+
+    AddParameterValue64Hex(hwndOutput, TEXT("MinimumUserModeAddress"), (ULONG_PTR)g_kdctx.MinimumUserModeAddress);
+
+    AddParameterValue64Hex(hwndOutput, TEXT("MaximumUserModeAddress"), (ULONG_PTR)g_kdctx.MaximumUserModeAddress);
 
     //
     // List g_WinObj (UI specific).

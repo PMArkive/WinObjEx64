@@ -70,6 +70,11 @@ typedef struct _OBHEADER_COOKIE {
     BOOLEAN Valid;
 } OBHEADER_COOKIE, * POBHEADER_COOKIE;
 
+typedef struct _EPROCESS_OFFSET {
+    ULONG OffsetValue;
+    BOOLEAN Valid;
+} EPROCESS_OFFSET, * PEPROCESS_OFFSET;
+
 typedef struct _KSE_ENGINE_DUMP {
     BOOLEAN Valid;
     ULONG_PTR KseAddress;
@@ -89,6 +94,10 @@ typedef struct _KLDBGCONTEXT {
 
     //system object header cookie (win10+)
     OBHEADER_COOKIE ObHeaderCookie;
+
+    //EPROCESS offsets
+    EPROCESS_OFFSET PsUniqueProcessId;
+    EPROCESS_OFFSET PsProcessImageName;
 
     //index of directory type and root address
     USHORT DirectoryTypeIndex;
@@ -353,6 +362,14 @@ POBJINFO ObQueryObjectByAddress(
 BOOL ObDumpTypeInfo(
     _In_    ULONG_PTR ObjectAddress,
     _Inout_ POBJECT_TYPE_COMPATIBLE ObjectTypeInfo);
+
+BOOL ObGetProcessImageFileName(
+    _In_ ULONG_PTR ProcessObject,
+    _Out_ PUNICODE_STRING ImageFileName);
+
+BOOL ObGetProcessId(
+    _In_ ULONG_PTR ProcessObject,
+    _Out_ PHANDLE UniqueProcessId);
 
 BOOL ObHeaderToNameInfoAddress(
     _In_    UCHAR ObjectInfoMask,
