@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -29,6 +29,11 @@ SDT_TABLE KiServiceTable;
 SDT_TABLE W32pServiceTable;
 
 EXTRASCONTEXT SSTDlgContext[SST_Max];
+
+#define COLUMN_SDTLIST_INDEX    0
+#define COLUMN_SDTLIST_NAME     1
+#define COLUMN_SDTLIST_ADDRESS  2
+#define COLUMN_SDTLIST_MODULE   3
 
 VOID SdtListCreate(
     _In_ HWND hwndDlg,
@@ -60,22 +65,22 @@ INT CALLBACK SdtDlgCompareFunc(
     pDlgContext = &SSTDlgContext[CallbackParam->Value];
 
     switch (pDlgContext->lvColumnToSort) {
-    case 0: //index
+    case COLUMN_SDTLIST_INDEX: //index
         return supGetMaxOfTwoULongFromString(
             pDlgContext->ListView,
             lParam1,
             lParam2,
             pDlgContext->lvColumnToSort,
             pDlgContext->bInverseSort);
-    case 2: //address (hex)
+    case COLUMN_SDTLIST_ADDRESS: //address (hex)
         return supGetMaxOfTwoU64FromHex(
             pDlgContext->ListView,
             lParam1,
             lParam2,
             pDlgContext->lvColumnToSort,
             pDlgContext->bInverseSort);
-    case 1: //string (fixed size)
-    case 3: //string (fixed size)
+    case COLUMN_SDTLIST_NAME: //string (fixed size)
+    case COLUMN_SDTLIST_MODULE: //string (fixed size)
         return supGetMaxCompareTwoFixedStrings(
             pDlgContext->ListView,
             lParam1,

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        11 Dec 2020
+*  DATE:        03 May 2021
 *
 *  Test code used while debug.
 *
@@ -32,6 +32,8 @@ HDESK g_TestDesktop = NULL;
 HANDLE g_TestThread = NULL;
 HANDLE g_TestPortThread = NULL;
 HANDLE g_PortHandle;
+PVOID g_MappedSection = NULL;
+HANDLE g_SectionVaTest = NULL;
 
 typedef struct _LPC_USER_MESSAGE {
     PORT_MESSAGE	Header;
@@ -760,6 +762,56 @@ wchar_t* Tstp_filename(const wchar_t* f)
     return p;
 }
 
+VOID TestSectionControlArea()
+{
+    NTSTATUS ntStatus;
+
+    OBJECT_ATTRIBUTES obja;
+    UNICODE_STRING ustr;
+    HANDLE sectionHandle;
+    SIZE_T commitSize = PAGE_SIZE;
+    PVOID baseAddress = NULL;
+    LARGE_INTEGER liSectionSize;
+
+    WCHAR szText[] = TEXT("This is text in our VA space");
+
+    RtlInitUnicodeString(&ustr, L"\\BaseNamedObjects\\TestSectionVa");
+    InitializeObjectAttributes(&obja, &ustr, OBJ_CASE_INSENSITIVE, NULL, NULL);
+
+    liSectionSize.QuadPart = commitSize;
+
+    ntStatus = NtCreateSection(&sectionHandle,
+        SECTION_ALL_ACCESS,
+        &obja,
+        &liSectionSize,
+        PAGE_READWRITE,
+        SEC_COMMIT,
+        NULL);
+
+    if (NT_SUCCESS(ntStatus)) {
+
+        if (NT_SUCCESS(NtMapViewOfSection(sectionHandle,
+            NtCurrentProcess(),
+            &baseAddress,
+            0,
+            commitSize,
+            NULL,
+            &commitSize,
+            ViewUnmap,
+            MEM_TOP_DOWN,
+            PAGE_READWRITE)))
+        {
+            RtlCopyMemory(baseAddress, szText, sizeof(szText));
+            g_MappedSection = baseAddress;
+            g_SectionVaTest = sectionHandle;
+        }
+        else {
+
+            NtClose(sectionHandle);
+        }
+    }
+}
+
 VOID TestSectionImage()
 {
     OBJECT_ATTRIBUTES obja, dirObja;
@@ -904,6 +956,7 @@ VOID TestStart(
 )
 {
     TestCall();
+    TestSectionControlArea();
     //TestSectionImage();
     //TestShadowDirectory();
     //TestPsObjectSecurity();
@@ -957,4 +1010,9 @@ VOID TestStop(
         TerminateThread(g_TestPortThread, 0);
         CloseHandle(g_TestPortThread);
     }
+    if (g_MappedSection) {
+        NtUnmapViewOfSection(NtCurrentProcess(), g_MappedSection);
+    }
+    if (g_SectionVaTest)
+        NtClose(g_SectionVaTest);
 }

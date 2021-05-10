@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 *  Common header file for the program support routines.
 *
@@ -364,25 +364,15 @@ BOOL supQueryWinstationDescription(
     _Inout_	LPWSTR Buffer,
     _In_ DWORD ccBuffer);
 
-BOOL supQueryProcessNameAndPidByEPROCESS(
-    _In_ ULONG_PTR ProcessObject,
-    _In_ PVOID ProcessList,
-    _Out_opt_ PHANDLE ProcessId,
-    _Inout_ LPWSTR NameBuffer,
-    _In_ DWORD BufferLength);
-
-BOOL supQueryProcessNameByEPROCESS(
-    _In_ ULONG_PTR ProcessObject,
-    _In_ PVOID ProcessList,
-    _Inout_ LPWSTR NameBuffer,
-    _In_ DWORD BufferLength);
-
 PVOID supGetTokenInfo(
     _In_ HANDLE TokenHandle,
     _In_ TOKEN_INFORMATION_CLASS TokenInformationClass,
     _Out_opt_ PULONG ReturnLength);
 
 PVOID supGetLoadedModulesList(
+    _Out_opt_ PULONG ReturnLength);
+
+PVOID supGetLoadedModulesList2(
     _Out_opt_ PULONG ReturnLength);
 
 PVOID supGetSystemInfo(
@@ -800,3 +790,6 @@ ULONG supAddLVColumnsFromArray(
 
 VOID supShowInitError(
     _In_ DWORD ErrorType);
+
+wchar_t* supExtractFileName(
+    _In_ const wchar_t* lpFullPath);

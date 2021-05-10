@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -22,6 +22,46 @@
 #define COLUMN_ALPCLIST_CLIENT_PORT         1
 #define COLUMN_ALPCLIST_CLIENT_EPROCESS     2
 #define COLUMN_ALPCLIST_PROCESSNAME         3
+
+/*
+* AlpcPortListHandlePopupMenu
+*
+* Purpose:
+*
+* List popup construction.
+*
+*/
+VOID AlpcPortListHandlePopupMenu(
+    _In_ HWND hwndDlg,
+    _In_ LPPOINT lpPoint,
+    _In_ PVOID lpUserParam
+)
+{
+    HMENU hMenu;
+    EXTRASCONTEXT* Context = (EXTRASCONTEXT*)lpUserParam;
+
+    hMenu = CreatePopupMenu();
+    if (hMenu) {
+
+        if (supListViewAddCopyValueItem(hMenu,
+            Context->ListView,
+            ID_OBJECT_COPY,
+            0,
+            lpPoint,
+            &Context->lvItemHit,
+            &Context->lvColumnHit))
+        {
+            TrackPopupMenu(hMenu,
+                TPM_RIGHTBUTTON | TPM_LEFTALIGN,
+                lpPoint->x,
+                lpPoint->y,
+                0,
+                hwndDlg,
+                NULL);
+        }
+        DestroyMenu(hMenu);
+    }
+}
 
 /*
 * AlpcPortListCompareFunc
@@ -66,6 +106,42 @@ INT CALLBACK AlpcPortListCompareFunc(
     }
 
     return 0;
+}
+
+/*
+* AlpcPortListHandleWMCommand
+*
+* Purpose:
+*
+* WM_COMMAND handler.
+*
+*/
+VOID AlpcPortListHandleWMCommand(
+    _In_ HWND hwndDlg,
+    _In_ WPARAM wParam,
+    _In_ LPARAM lParam
+)
+{
+    EXTRASCONTEXT* pDlgContext = (EXTRASCONTEXT*)GetProp(hwndDlg, T_DLGCONTEXT);
+
+    UNREFERENCED_PARAMETER(lParam);
+
+    switch (GET_WM_COMMAND_ID(wParam, lParam)) {
+    case ID_OBJECT_COPY:
+
+        if (pDlgContext) {
+
+            supListViewCopyItemValueToClipboard(pDlgContext->ListView,
+                pDlgContext->lvItemHit,
+                pDlgContext->lvColumnHit);
+
+        }
+
+        break;
+
+    default:
+        break;
+    }
 }
 
 /*
@@ -153,15 +229,16 @@ typedef struct _ALPC_PORT_REF {
 * Enumerate connected clients for given port.
 *
 */
-VOID AlpcPortEnumerateClients(
-    _In_ HWND hwndDlg,
-    _In_ POUTPUT_CLIENTS_CALLBACK OutputCallback,
+BOOL AlpcPortEnumerateClients(
     _In_ ULONG_PTR PortAddress,
-    _In_ HWND ListView
+    _In_ POUTPUT_CLIENTS_CALLBACK OutputCallback,
+    _In_ HWND ListView,
+    _Out_ PSIZE_T NumberOfClients
 )
 {
     BOOLEAN bSuccess = FALSE;
-    ULONG objectSize = 0, objectVersion = 0, cEntries = 0;
+    ULONG objectSize = 0, objectVersion = 0;
+    SIZE_T cEntries = 0;
 
     ULONG_PTR kernelAddress, comsListHead, serverPortAddress, clientPortAddress;
 
@@ -172,7 +249,8 @@ VOID AlpcPortEnumerateClients(
 
     ULONG offset = FIELD_OFFSET(ALPC_COMMUNICATION_INFO_COMPAT, CommunicationList);
 
-    WCHAR szBuffer[100];
+   
+    *NumberOfClients = 0;
 
     //
     // Dump ALPC_PORT.
@@ -182,8 +260,7 @@ VOID AlpcPortEnumerateClients(
         &objectVersion);
 
     if (selfPort.Ref == NULL) {
-        SetDlgItemText(hwndDlg, ID_ALPCLISTMSG, TEXT("Error, cannot read port data"));
-        return;
+        return FALSE;
     }
 
     do {
@@ -266,15 +343,11 @@ VOID AlpcPortEnumerateClients(
 
     } while (FALSE);
 
-    if (bSuccess == FALSE) {
-        SetDlgItemText(hwndDlg, ID_ALPCLISTMSG, TEXT("Error, probably not all connections listed"));
-    }
-    else {
-        RtlStringCchPrintfSecure(szBuffer, 100, TEXT("%lu connections"), cEntries);
-        SetDlgItemText(hwndDlg, ID_ALPCLISTMSG, szBuffer);
-    }
+    *NumberOfClients = cEntries;
 
     supVirtualFree(selfPort.Ref);
+
+    return bSuccess;
 }
 
 /*
@@ -292,10 +365,14 @@ VOID CALLBACK AlpcPortEnumerateCallback(
     _In_ ULONG_PTR OwnerProcess
 )
 {
+    BOOLEAN bExtQuery = FALSE;
     UNICODE_STRING usImageFileName;
+    PUNICODE_STRING pusFileName = NULL;
 
     INT nIndex;
     LVITEM lvitem;
+
+    HANDLE processId = NULL;
 
     WCHAR szBuffer[MAX_PATH * 2];
 
@@ -342,16 +419,43 @@ VOID CALLBACK AlpcPortEnumerateCallback(
     // Process Name
     //
     RtlInitEmptyUnicodeString(&usImageFileName, NULL, 0);
-    if (ObGetProcessImageFileName(OwnerProcess, &usImageFileName)) {
-        lvitem.pszText = usImageFileName.Buffer;
+
+    if (ObGetProcessId(OwnerProcess, &processId)) {
+
+        bExtQuery = NT_SUCCESS(supQueryProcessImageFileNameWin32(processId, &pusFileName));
+
+        if (bExtQuery) {
+
+            if (pusFileName->Buffer && pusFileName->Length) {
+
+                lvitem.pszText = supExtractFileName(pusFileName->Buffer);
+
+            }
+            else {
+                bExtQuery = FALSE;
+            }
+            
+        }
+
     }
-    else {
-        _strcpy(szBuffer, T_Unknown);
-        lvitem.pszText = szBuffer;
+
+    if (bExtQuery == FALSE) {
+
+        if (ObGetProcessImageFileName(OwnerProcess, &usImageFileName)) {
+            lvitem.pszText = usImageFileName.Buffer;
+        }
+        else {
+            _strcpy(szBuffer, T_Unknown);
+            lvitem.pszText = szBuffer;
+        }
+    
     }
 
     lvitem.iSubItem++;
     ListView_SetItem(ListView, &lvitem);
+
+    if (pusFileName)
+        supHeapFree(pusFileName);
 
     if (usImageFileName.Buffer)
         RtlFreeUnicodeString(&usImageFileName);
@@ -372,12 +476,26 @@ VOID AlpcPortListSetInfo(
     _In_ EXTRASCONTEXT* pDlgContext
 )
 {
+    SIZE_T cEntries = 0;
+    WCHAR szBuffer[100];
+
     ListView_DeleteAllItems(pDlgContext->ListView);
 
-    AlpcPortEnumerateClients(hwndDlg,
+    if (AlpcPortEnumerateClients(Context->ObjectInfo.ObjectAddress,
         (POUTPUT_CLIENTS_CALLBACK)AlpcPortEnumerateCallback,
-        Context->ObjectInfo.ObjectAddress,
-        pDlgContext->ListView);
+        pDlgContext->ListView,
+        &cEntries))
+    {
+
+        RtlStringCchPrintfSecure(szBuffer, 100, TEXT("%llu connections"), cEntries);
+        SetDlgItemText(hwndDlg, ID_ALPCLISTMSG, szBuffer);
+
+    }
+    else {
+
+        SetDlgItemText(hwndDlg, ID_ALPCLISTMSG, TEXT("Error, not all connections listed"));
+
+    }
 }
 
 /*
@@ -505,6 +623,10 @@ INT_PTR CALLBACK AlpcPortListDialogProc(
     case WM_NOTIFY:
         return AlpcPortListHandleNotify(hwndDlg, lParam);
 
+    case WM_COMMAND:      
+        AlpcPortListHandleWMCommand(hwndDlg, wParam, lParam);
+        break;
+
     case WM_DESTROY:
         pDlgContext = (EXTRASCONTEXT*)RemoveProp(hwndDlg, T_DLGCONTEXT);
         if (pDlgContext) {
@@ -529,6 +651,20 @@ INT_PTR CALLBACK AlpcPortListDialogProc(
             }
         }
         break;
+
+    case WM_CONTEXTMENU:
+
+        pDlgContext = (EXTRASCONTEXT*)GetProp(hwndDlg, T_DLGCONTEXT);
+        if (pDlgContext) {
+            supHandleContextMenuMsgForListView(hwndDlg,
+                wParam,
+                lParam,
+                pDlgContext->ListView,
+                (pfnPopupMenuHandler)AlpcPortListHandlePopupMenu,
+                pDlgContext);
+        }
+        break;
+
     default:
         return FALSE;
 

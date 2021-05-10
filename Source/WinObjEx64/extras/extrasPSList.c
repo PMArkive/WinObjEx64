@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -39,6 +39,13 @@ ULONG g_DialogQuit = 0, g_DialogRefresh = 0;
 HANDLE g_PsListHeap = NULL;
 
 LIST_ENTRY g_PsListHead;
+
+#define COLUMN_THREADLIST_TID              0
+#define COLUMN_THREADLIST_PRIORITY         1
+#define COLUMN_THREADLIST_STATE            2
+#define COLUMN_THREADLIST_ETHREAD          3
+#define COLUMN_THREADLIST_STARTADDRESS     4
+#define COLUMN_THREADLIST_MODULE           5
 
 
 /*
@@ -222,24 +229,24 @@ INT CALLBACK PsListCompareFunc(
 )
 {
     switch (lParamSort) {
-    case 0: //TID
-    case 1: //BasePriority
+    case COLUMN_THREADLIST_TID: //TID
+    case COLUMN_THREADLIST_PRIORITY: //BasePriority
         return supGetMaxOfTwoULongFromString(
             PsDlgContext.ListView,
             lParam1,
             lParam2,
             PsDlgContext.lvColumnToSort,
             PsDlgContext.bInverseSort);
-    case 2: //string (fixed size)
-    case 5: //string (fixed size)
+    case COLUMN_THREADLIST_STATE: //string (fixed size)
+    case COLUMN_THREADLIST_MODULE: //string (fixed size)
         return supGetMaxCompareTwoFixedStrings(
             PsDlgContext.ListView,
             lParam1,
             lParam2,
             PsDlgContext.lvColumnToSort,
             PsDlgContext.bInverseSort);
-    case 3: //ethread (hex)
-    case 4: //address (hex)
+    case COLUMN_THREADLIST_ETHREAD: //ethread (hex)
+    case COLUMN_THREADLIST_STARTADDRESS: //address (hex)
         return supGetMaxOfTwoU64FromHex(
             PsDlgContext.ListView,
             lParam1,

@@ -6,7 +6,7 @@
 *
 *  VERSION:     2.06
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 *  Native API support functions.
 *
@@ -635,90 +635,6 @@ BOOL ntsupIsProcess32bit(
 }
 
 /*
-* ntsupGetLoadedModulesList2Ex
-*
-* Purpose:
-*
-* Read list of loaded kernel modules.
-*
-*/
-PVOID ntsupGetLoadedModulesList2Ex(
-    _Out_opt_ PULONG ReturnLength,
-    _In_ PNTSUPMEMALLOC AllocMem,
-    _In_ PNTSUPMEMFREE FreeMem
-)
-{
-    NTSTATUS    ntStatus;
-    PVOID       buffer;
-    ULONG       bufferSize = PAGE_SIZE;
-
-    PRTL_PROCESS_MODULES pvModules;
-
-    if (ReturnLength)
-        *ReturnLength = 0;
-
-    buffer = AllocMem((SIZE_T)bufferSize);
-    if (buffer == NULL)
-        return NULL;
-
-    ntStatus = NtQuerySystemInformation(
-        SystemModuleInformationEx,
-        buffer,
-        bufferSize,
-        &bufferSize);
-
-    if (ntStatus == STATUS_INFO_LENGTH_MISMATCH) {
-        FreeMem(buffer);
-        buffer = AllocMem((SIZE_T)bufferSize);
-
-        ntStatus = NtQuerySystemInformation(
-            SystemModuleInformationEx,
-            buffer,
-            bufferSize,
-            &bufferSize);
-    }
-
-    if (ReturnLength)
-        *ReturnLength = bufferSize;
-
-    if (ntStatus == STATUS_BUFFER_OVERFLOW) {
-
-        pvModules = (PRTL_PROCESS_MODULES)buffer;
-        if (pvModules->NumberOfModules != 0)
-            return buffer;
-    }
-
-    if (NT_SUCCESS(ntStatus)) {
-        return buffer;
-    }
-
-    if (buffer)
-        FreeMem(buffer);
-
-    return NULL;
-}
-
-/*
-* ntsupGetLoadedModulesList2
-*
-* Purpose:
-*
-* Read list of loaded kernel modules.
-*
-* Returned buffer must be freed with ntsupHeapFree after usage.
-*
-*/
-PVOID ntsupGetLoadedModulesList2(
-    _Out_opt_ PULONG ReturnLength
-)
-{
-    return ntsupGetLoadedModulesList2Ex(
-        ReturnLength,
-        (PNTSUPMEMALLOC)ntsupHeapAlloc,
-        (PNTSUPMEMFREE)ntsupHeapFree);
-}
-
-/*
 * ntsupGetLoadedModulesListEx
 *
 * Purpose:
@@ -727,6 +643,7 @@ PVOID ntsupGetLoadedModulesList2(
 *
 */
 PVOID ntsupGetLoadedModulesListEx(
+    _In_ BOOL ExtendedOutput,
     _Out_opt_ PULONG ReturnLength,
     _In_ PNTSUPMEMALLOC AllocMem,
     _In_ PNTSUPMEMFREE FreeMem
@@ -737,16 +654,22 @@ PVOID ntsupGetLoadedModulesListEx(
     ULONG       bufferSize = PAGE_SIZE;
 
     PRTL_PROCESS_MODULES pvModules;
+    SYSTEM_INFORMATION_CLASS infoClass;
 
     if (ReturnLength)
         *ReturnLength = 0;
+
+    if (ExtendedOutput)
+        infoClass = SystemModuleInformationEx;
+    else
+        infoClass = SystemModuleInformation;
 
     buffer = AllocMem((SIZE_T)bufferSize);
     if (buffer == NULL)
         return NULL;
 
     ntStatus = NtQuerySystemInformation(
-        SystemModuleInformation,
+        infoClass,
         buffer,
         bufferSize,
         &bufferSize);
@@ -756,7 +679,7 @@ PVOID ntsupGetLoadedModulesListEx(
         buffer = AllocMem((SIZE_T)bufferSize);
 
         ntStatus = NtQuerySystemInformation(
-            SystemModuleInformation,
+            infoClass,
             buffer,
             bufferSize,
             &bufferSize);
@@ -809,6 +732,28 @@ PVOID ntsupGetLoadedModulesList(
 )
 {
     return ntsupGetLoadedModulesListEx(
+        FALSE,
+        ReturnLength,
+        (PNTSUPMEMALLOC)ntsupHeapAlloc,
+        (PNTSUPMEMFREE)ntsupHeapFree);
+}
+
+/*
+* ntsupGetLoadedModulesList2
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+*
+* Returned buffer must be freed with ntsupHeapFree after usage.
+*
+*/
+PVOID ntsupGetLoadedModulesList2(
+    _Out_opt_ PULONG ReturnLength
+)
+{
+    return ntsupGetLoadedModulesListEx(
+        TRUE,
         ReturnLength,
         (PNTSUPMEMALLOC)ntsupHeapAlloc,
         (PNTSUPMEMFREE)ntsupHeapFree);
@@ -1383,7 +1328,6 @@ PVOID ntsupLookupImageSectionByName(
     return Section;
 }
 
-
 /*
 * ntsupFindPattern
 *
@@ -1897,7 +1841,6 @@ NTSTATUS ntsupIsProcessElevated(
 
     return ntStatus;
 }
-
 
 /*
 * ntsupGetMappedFileName

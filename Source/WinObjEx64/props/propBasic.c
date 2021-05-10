@@ -2026,11 +2026,16 @@ VOID propBasicQueryAlpcPort(
     _In_ HWND hwndDlg
 )
 {
-    ULONG_PTR OwnerProcess;
-    ULONG ObjectSize = 0, ObjectVersion = 0;
-    PVOID ProcessList;
+    BOOL bQueryResult;
+    ULONG_PTR ownerProcess;
+    HANDLE ownerProcessId = 0;
+    ULONG objectSize = 0, objectVersion = 0;
+    UNICODE_STRING usImageFileName;
+    PUNICODE_STRING pusFileName = NULL;
+    LPWSTR lpProcessName, pEnd;
+    SIZE_T cchBuffer;
 
-    WCHAR szBuffer[MAX_PATH * 2];
+    WCHAR szBuffer[MAX_PATH * 4];
 
     union {
         union {
@@ -2045,43 +2050,75 @@ VOID propBasicQueryAlpcPort(
     VALIDATE_PROP_CONTEXT(Context);
 
     AlpcPort.Ref = (PBYTE)ObDumpAlpcPortObjectVersionAware(Context->ObjectInfo.ObjectAddress,
-        &ObjectSize,
-        &ObjectVersion);
+        &objectSize,
+        &objectVersion);
 
     if (AlpcPort.Ref == NULL) {
         SetDlgItemText(hwndDlg, ID_ALPC_OWNERPROCESS, T_CannotQuery);
         return;
     }
 
+    RtlInitEmptyUnicodeString(&usImageFileName, NULL, 0);
+
     //
     // Determine owner process.
     //
-    OwnerProcess = (ULONG_PTR)AlpcPort.u1.Port7600->OwnerProcess;
-    if (OwnerProcess) {
+    ownerProcess = (ULONG_PTR)AlpcPort.u1.Port7600->OwnerProcess;
+    if (ownerProcess) {
         szBuffer[0] = L'0';
         szBuffer[1] = L'x';
         szBuffer[2] = 0;
-        u64tohex(OwnerProcess, &szBuffer[2]);
+        u64tohex(ownerProcess, &szBuffer[2]);
 
-        _strcat(szBuffer, TEXT(" ("));
+        pEnd = _strcat(szBuffer, TEXT(" ("));
 
-        ProcessList = supGetSystemInfo(SystemProcessInformation, NULL);
-        if (ProcessList) {
+        bQueryResult = FALSE;
+        lpProcessName = T_CannotQuery;
 
-            if (!supQueryProcessNameByEPROCESS(
-                OwnerProcess,
-                ProcessList,
-                _strend(szBuffer),
-                MAX_PATH))
-            {
-                _strcat(szBuffer, T_CannotQuery);
+        if (ObGetProcessId(ownerProcess, &ownerProcessId)) {
+
+            bQueryResult = NT_SUCCESS(supQueryProcessImageFileNameWin32(ownerProcessId,
+                &pusFileName));
+
+            if (bQueryResult) {
+
+                if (pusFileName->Buffer && pusFileName->Length) {
+
+                    lpProcessName = supExtractFileName(pusFileName->Buffer);
+
+                }
+                else {
+
+                    bQueryResult = FALSE;
+
+                }
+
             }
-            supHeapFree(ProcessList);
+
         }
-        else {
-            _strcat(szBuffer, T_CannotQuery);
+
+        if (bQueryResult == FALSE) {
+
+            if (ObGetProcessImageFileName(ownerProcess, &usImageFileName)) {
+
+                lpProcessName = usImageFileName.Buffer;
+
+            }
+
         }
+
+        cchBuffer = RTL_NUMBER_OF(szBuffer) - _strlen(szBuffer) - 4;
+
+        _strncpy(pEnd, cchBuffer, lpProcessName, _strlen(lpProcessName));
+
         _strcat(szBuffer, TEXT(")"));
+
+        if (pusFileName)
+            supHeapFree(pusFileName);
+
+        if (usImageFileName.Buffer)
+            RtlFreeUnicodeString(&usImageFileName);
+
     }
     else {
         _strcpy(szBuffer, T_CannotQuery);

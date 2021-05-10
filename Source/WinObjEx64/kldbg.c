@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 *  MINIMUM SUPPORTED OS WINDOWS 7
 *
@@ -1458,7 +1458,6 @@ BOOLEAN ObpFindProcessObjectOffsets(
     _In_ PKLDBGCONTEXT Context
 )
 {
-    BOOLEAN bResult = FALSE;
     PBYTE   ptrCode;
 
     ULONG_PTR NtOsBase;
@@ -1504,7 +1503,6 @@ BOOLEAN ObpFindProcessObjectOffsets(
             Context->PsProcessImageName.OffsetValue = *(PULONG)(ptrCode + 3);
             Context->PsProcessImageName.Valid = TRUE;
 
-            bResult = (Context->PsUniqueProcessId.Valid && Context->PsProcessImageName.Valid);
 
         } while (FALSE);
 
@@ -1513,7 +1511,7 @@ BOOLEAN ObpFindProcessObjectOffsets(
         return FALSE;
     }
 
-    return bResult;
+    return (Context->PsUniqueProcessId.Valid && Context->PsProcessImageName.Valid);
 }
 
 /*
@@ -2405,7 +2403,7 @@ BOOL ObGetProcessId(
 */
 BOOL ObGetProcessImageFileName(
     _In_ ULONG_PTR ProcessObject,
-    _Out_ PUNICODE_STRING ImageFileName
+    _Inout_ PUNICODE_STRING ImageFileName
 )
 {
     ULONG_PTR kernelAddress;
@@ -2415,6 +2413,8 @@ BOOL ObGetProcessImageFileName(
         return FALSE;
 
     kernelAddress = ProcessObject + g_kdctx.PsProcessImageName.OffsetValue;
+
+    RtlZeroMemory(&szImageFileName, sizeof(szImageFileName));
 
     if (!kdReadSystemMemory(kernelAddress, &szImageFileName, sizeof(szImageFileName)))
         return FALSE;

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -838,7 +838,28 @@ PVOID supGetLoadedModulesList(
     _Out_opt_ PULONG ReturnLength
 )
 {
-    return ntsupGetLoadedModulesListEx(ReturnLength,
+    return ntsupGetLoadedModulesListEx(FALSE,
+        ReturnLength,
+        supHeapAlloc,
+        supHeapFree);
+}
+
+/*
+* supGetLoadedModulesList2
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+*
+* Returned buffer must be freed with supHeapFree after usage.
+*
+*/
+PVOID supGetLoadedModulesList2(
+    _Out_opt_ PULONG ReturnLength
+)
+{
+    return ntsupGetLoadedModulesListEx(TRUE,
+        ReturnLength,
         supHeapAlloc,
         supHeapFree);
 }
@@ -1637,154 +1658,6 @@ VOID supShutdown(
     if (g_pObjectTypesInfo) supHeapFree(g_pObjectTypesInfo);
 
     SdtFreeGlobals();
-}
-
-/*
-* supQueryProcessNameAndPidByEPROCESS
-*
-* Purpose:
-*
-* Lookups process name and PID by given process object address.
-*
-* If nothing found return FALSE.
-*
-*/
-BOOL supQueryProcessNameAndPidByEPROCESS(
-    _In_ ULONG_PTR ProcessObject,
-    _In_ PVOID ProcessList,
-    _Out_opt_ PHANDLE ProcessId,
-    _Inout_ LPWSTR NameBuffer,
-    _In_ DWORD BufferLength //size of buffer in chars
-)
-{
-    BOOL bFound = FALSE;
-    DWORD  CurrentProcessId = GetCurrentProcessId();
-    ULONG NextEntryDelta = 0, NumberOfProcesses = 0, i, j, ProcessListCount = 0;
-    HANDLE hProcess = NULL;
-    OBEX_PROCESS_LOOKUP_ENTRY* SavedProcessList;
-    PSYSTEM_HANDLE_INFORMATION_EX pHandles;
-
-    union {
-        PSYSTEM_PROCESSES_INFORMATION Processes;
-        PBYTE ListRef;
-    } List;
-
-    List.ListRef = (PBYTE)ProcessList;
-
-    if (ProcessId)
-        *ProcessId = NULL;
-
-    //
-    // Calculate process handle list size.
-    //
-    do {
-
-        List.ListRef += NextEntryDelta;
-
-        if (List.Processes->ThreadCount)
-            NumberOfProcesses += 1;
-
-        NextEntryDelta = List.Processes->NextEntryDelta;
-
-    } while (NextEntryDelta);
-
-    List.ListRef = (PBYTE)ProcessList;
-
-    ProcessListCount = 0;
-
-    //
-    // Build process handle list.
-    //
-    SavedProcessList = (OBEX_PROCESS_LOOKUP_ENTRY*)supHeapAlloc(NumberOfProcesses * sizeof(OBEX_PROCESS_LOOKUP_ENTRY));
-    if (SavedProcessList) {
-
-        NextEntryDelta = 0;
-
-        do {
-
-            List.ListRef += NextEntryDelta;
-
-            if (List.Processes->ThreadCount) {
-
-                if (NT_SUCCESS(supOpenProcess(List.Processes->UniqueProcessId,
-                    PROCESS_QUERY_LIMITED_INFORMATION,
-                    &hProcess)))
-                {
-                    SavedProcessList[ProcessListCount].hProcess = hProcess;
-                    SavedProcessList[ProcessListCount].EntryPtr = List.ListRef;
-                    ProcessListCount += 1;
-                }
-            }
-
-            NextEntryDelta = List.Processes->NextEntryDelta;
-
-        } while (NextEntryDelta);
-
-        //
-        // Lookup this handles in system handle list.
-        //
-        pHandles = (PSYSTEM_HANDLE_INFORMATION_EX)supGetSystemInfo(SystemExtendedHandleInformation, NULL);
-        if (pHandles) {
-            for (i = 0; i < pHandles->NumberOfHandles; i++)
-                if (pHandles->Handles[i].UniqueProcessId == (ULONG_PTR)CurrentProcessId) //current process id
-                    for (j = 0; j < ProcessListCount; j++)
-                        if (pHandles->Handles[i].HandleValue == (ULONG_PTR)SavedProcessList[j].hProcess) //same handle value
-                            if ((ULONG_PTR)pHandles->Handles[i].Object == ProcessObject) { //save object value
-
-                                List.ListRef = SavedProcessList[j].EntryPtr;
-
-                                if (ProcessId)
-                                    *ProcessId = List.Processes->UniqueProcessId;
-
-                                _strncpy(
-                                    NameBuffer,
-                                    BufferLength,
-                                    List.Processes->ImageName.Buffer,
-                                    List.Processes->ImageName.Length / sizeof(WCHAR));
-
-                                bFound = TRUE;
-                                break;
-                            }
-
-            supHeapFree(pHandles);
-        }
-
-        //
-        // Destroy process handle list.
-        //
-        for (i = 0; i < ProcessListCount; i++) {
-            if (SavedProcessList[i].hProcess)
-                NtClose(SavedProcessList[i].hProcess);
-        }
-
-        supHeapFree(SavedProcessList);
-    }
-
-    return bFound;
-}
-
-/*
-* supQueryProcessNameByEPROCESS
-*
-* Purpose:
-*
-* Lookups process name by given process object address.
-*
-* If nothing found return FALSE.
-*
-*/
-BOOL supQueryProcessNameByEPROCESS(
-    _In_ ULONG_PTR ProcessObject,
-    _In_ PVOID ProcessList,
-    _Inout_ LPWSTR NameBuffer,
-    _In_ DWORD BufferLength //size of buffer in chars
-)
-{
-     return supQueryProcessNameAndPidByEPROCESS(ProcessObject,
-         ProcessList,
-         NULL,
-         NameBuffer,
-         BufferLength);
 }
 
 /*
@@ -7169,7 +7042,7 @@ VOID supQueryAlpcPortObjectTypeIndex(
         if (!NT_SUCCESS(ntStatus))
             break;
 
-        ntStatus = RtlCreateAcl(pDacl, sdLength - SECURITY_DESCRIPTOR_MIN_LENGTH, ACL_REVISION2);
+        ntStatus = RtlCreateAcl(pDacl, (ULONG)(sdLength - SECURITY_DESCRIPTOR_MIN_LENGTH), ACL_REVISION2);
         if (!NT_SUCCESS(ntStatus))
             break;
 
@@ -7495,4 +7368,29 @@ VOID supShowInitError(
         (LPCWSTR)PROGRAM_NAME, 
         MB_ICONWARNING | MB_OK);
 
+}
+
+/*
+* supExtractFileName
+*
+* Purpose:
+*
+* Return filename part from given path.
+*
+*/
+wchar_t* supExtractFileName(
+    _In_ const wchar_t* lpFullPath
+)
+{
+    wchar_t* p = (wchar_t*)lpFullPath;
+
+    if (lpFullPath == 0)
+        return 0;
+
+    while (*lpFullPath != (wchar_t)0) {
+        if (*lpFullPath == (wchar_t)'\\')
+            p = (wchar_t*)lpFullPath + 1;
+        lpFullPath++;
+    }
+    return p;
 }

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.88
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 *  Common header file for the user interface.
 *
@@ -66,7 +66,6 @@ typedef HWND(WINAPI *pfnHtmlHelpW)(
 #define T_VIEWSD                L"View Security Descriptor..."
 #define T_RUNASADMIN            L"R&un as Administrator"
 #define T_RUNASSYSTEM           L"R&un as LocalSystem"
-#define T_COPYTEXTROW           L"Copy Row Selection"
 #define T_COPYEPROCESS          L"Copy EPROCESS Value"
 #define T_COPYOBJECT            L"Copy Object Value"
 #define T_COPYVALUE             L"Copy Value Field Text"

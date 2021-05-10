@@ -365,7 +365,7 @@ BOOL ObDumpTypeInfo(
 
 BOOL ObGetProcessImageFileName(
     _In_ ULONG_PTR ProcessObject,
-    _Out_ PUNICODE_STRING ImageFileName);
+    _Inout_ PUNICODE_STRING ImageFileName);
 
 BOOL ObGetProcessId(
     _In_ ULONG_PTR ProcessObject,

@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.167
+*  VERSION:     1.168
 *
-*  DATE:        02 May 2021
+*  DATE:        03 May 2021
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -4344,6 +4344,274 @@ typedef struct _FILE_OBJECT* PFILE_OBJECT;
 */
 
 /*
+* MM START
+*/
+typedef ULONG MMSECTION_FLAGS;
+typedef ULONG MMSECTION_FLAGS2;
+typedef ULONG SEGMENT_FLAGS;
+typedef ULONG MMVAD_FLAGS;
+typedef ULONG MMVAD_FLAGS1;
+typedef ULONG MMVAD_FLAGS2;
+
+typedef struct _MI_SYSTEM_CACHE_VIEW_ATTRIBUTES {
+    union {
+        ULONGLONG NumberOfPtes : 6;
+        ULONGLONG PartitionId : 10;
+        ULONGLONG Spare : 2;
+        ULONGLONG SectionOffset : 48;
+    } u1;
+} MI_SYSTEM_CACHE_VIEW_ATTRIBUTES, * PMI_SYSTEM_CACHE_VIEW_ATTRIBUTES;
+
+typedef struct _MI_REVERSE_VIEW_MAP {
+    struct _LIST_ENTRY ViewLinks;
+    union {
+        VOID* SystemCacheVa;
+        VOID* SessionViewVa;
+        struct _EPROCESS* VadsProcess;
+        ULONG Type : 2;
+    } u1;
+    union {
+        struct _SUBSECTION* Subsection;
+        ULONG SubsectionType : 1;
+    } u2;
+    union {
+        struct _MI_SYSTEM_CACHE_VIEW_ATTRIBUTES SystemCacheAttributes;
+        ULONGLONG SectionOffset;
+    } u3;
+} MI_REVERSE_VIEW_MAP, * PMI_REVERSE_VIEW_MAP; /* size: 0x0028 */
+
+typedef struct _RTL_BALANCED_NODE {
+    union
+    {
+        struct _RTL_BALANCED_NODE* Children[2];
+        struct
+        {
+            struct _RTL_BALANCED_NODE* Left;
+            struct _RTL_BALANCED_NODE* Right;
+        };
+    };
+    union
+    {
+        UCHAR Red : 1;
+        UCHAR Balance : 2;
+        ULONG_PTR ParentValue;
+    };
+} RTL_BALANCED_NODE, * PRTL_BALANCED_NODE;
+
+typedef struct _SEGMENT {
+
+    struct _CONTROL_AREA* ControlArea;
+    unsigned long TotalNumberOfPtes;
+    SEGMENT_FLAGS SegmentFlags;
+    ULONG_PTR NumberOfCommittedPages;
+    ULONG_PTR SizeOfSegment;
+
+    union {
+        struct _MMEXTEND_INFO* ExtendInfo;
+        void* BasedAddress;
+    } u1;
+
+    EX_PUSH_LOCK SegmentLock;
+
+    union {
+        union {
+            ULONG_PTR ImageCommitment;
+            ULONG CreatingProcessId;
+        };
+    } u2;
+
+    union {
+        union {
+            struct _MI_SECTION_IMAGE_INFORMATION* ImageInformation;
+            void* FirstMappedVa;
+        };
+    } u3;
+
+    struct _MMPTE* PrototypePte;
+
+} SEGMENT, * PSEGMENT;  /* size: 0x0048 */
+
+typedef struct _CONTROL_AREA_COMPAT {
+
+    SEGMENT* Segment;
+    LIST_ENTRY ListHead;
+    ULONG_PTR NumberOfSectionReferences;
+    ULONG_PTR NumberOfPfnReferences;
+    ULONG_PTR NumberOfMappedViews;
+    ULONG_PTR NumberOfUserReferences;
+
+    union {
+        union {
+            ULONG LongFlags;
+            MMSECTION_FLAGS Flags;
+        };
+    } u;
+
+    union {
+        union {
+            ULONG LongFlags;
+            MMSECTION_FLAGS2 Flags;
+        };
+    } u1;
+
+    EX_FAST_REF FilePointer;
+    volatile LONG ControlAreaLock;
+    ULONG ModifiedWriteCount;
+    struct _MI_CONTROL_AREA_WAIT_BLOCK* WaitList;
+
+    union
+    {
+        struct
+        {
+            union
+            {
+                ULONG NumberOfSystemCacheViews;
+                ULONG ImageRelocationStartBit;
+            };
+            union
+            {
+                volatile LONG WritableUserReferences;
+                struct
+                {
+                    unsigned long ImageRelocationSizeIn64k : 16; /* bit position: 0 */
+                    unsigned long LargePage : 1; /* bit position: 16 */
+                    unsigned long SystemImage : 1; /* bit position: 17 */
+                    unsigned long StrongCode : 2; /* bit position: 18 */
+                    unsigned long CantMove : 1; /* bit position: 20 */
+                    unsigned long BitMap : 2; /* bit position: 21 */
+                    unsigned long ImageActive : 1; /* bit position: 23 */
+                };
+            };
+            union
+            {
+                ULONG FlushInProgressCount;
+                ULONG NumberOfSubsections;
+                struct _MI_IMAGE_SECURITY_REFERENCE* SeImageStub;
+            };
+        } e2;
+    } u2;
+
+    //
+    // Incomplete definition, tail is version dependent.
+    //
+
+} CONTROL_AREA_COMPAT, * PCONTROL_AREA_COMPAT;
+
+typedef struct _MMVAD_SHORT {
+    union
+    {
+        struct
+        {
+            struct _MMVAD_SHORT* NextVad;
+            void* ExtraCreateInfo;
+        };
+        struct _RTL_BALANCED_NODE VadNode;
+    };
+
+    ULONG StartingVpn;
+    ULONG EndingVpn;
+    UCHAR StartingVpnHigh;
+    UCHAR EndingVpnHigh;
+    UCHAR CommitChargeHigh;
+    UCHAR SpareNT64VadUChar;
+    LONG ReferenceCount;
+    EX_PUSH_LOCK PushLock;
+
+    ULONG LongFlags;
+    ULONG LongFlags1;
+
+    struct _MI_VAD_EVENT_BLOCK* EventList;
+
+} MMVAD_SHORT, * PMMVAD_SHORT;  /* size: 0x0040 */
+
+typedef struct _MI_VAD_SEQUENTIAL_INFO {
+
+    struct {
+        ULONG_PTR Length : 12; /* bit position: 0 */
+        ULONG_PTR Vpn : 52; /* bit position: 12 */
+    };
+
+} MI_VAD_SEQUENTIAL_INFO, * PMI_VAD_SEQUENTIAL_INFO; /* size: 0x0008 */
+
+typedef struct _MMVAD {
+
+    struct _MMVAD_SHORT Core;
+
+    ULONG LongFlags2;
+
+    struct _SUBSECTION* Subsection;
+    struct _MMPTE* FirstPrototypePte;
+    struct _MMPTE* LastContiguousPte;
+    LIST_ENTRY ViewLinks;
+    struct _EPROCESS* VadsProcess;
+
+    union
+    {
+        union
+        {
+            struct _MI_VAD_SEQUENTIAL_INFO SequentialVa;
+            struct _MMEXTEND_INFO* ExtendedInfo;
+        };
+    } u4;
+
+    FILE_OBJECT* FileObject;
+
+} MMVAD, * PMMVAD; /* size: 0x0088 */
+
+typedef struct _SUBSECTION_COMPAT {
+
+    struct _CONTROL_AREA* ControlArea;
+    struct _MMPTE* SubsectionBase;
+    struct _SUBSECTION* NextSubsection;
+
+    //
+    // Incomplete definition.
+    //
+
+} SUBSECTION_COMPAT, * PSUBSECTION_COMPAT;
+
+//
+// This is Windows 10 only Section Object definition.
+// 
+// N.B. It completely differs from anything else.
+//
+typedef struct _SECTION_COMPAT {
+
+    RTL_BALANCED_NODE SectionNode;
+    ULONG_PTR StartingVpn;
+    ULONG_PTR EndingVpn;
+
+    union {
+        union {
+            struct _CONTROL_AREA* ControlArea;
+            struct _FILE_OBJECT* FileObject;
+            struct {
+                ULONG_PTR RemoteImageFileObject : 1; /* bit position: 0 */
+                ULONG_PTR RemoteDataFileObject : 1; /* bit position: 1 */
+            };
+        };
+    } u1;
+
+    ULONG_PTR SizeOfSection;
+
+    union {
+        ULONG LongFlags;
+        MMSECTION_FLAGS Flags;
+    } u;
+
+    struct {
+        ULONG InitialPageProtection : 12; /* bit position: 0 */
+        ULONG SessionId : 19; /* bit position: 12 */
+        ULONG NoValidationNeeded : 1; /* bit position: 31 */
+    };
+
+} SECTION_COMPAT, * PSECTION_COMPAT;  /* size: 0x0040 */
+
+/*
+* MM END
+*/
+
+/*
 ** Callbacks START
 */
 
@@ -6458,25 +6726,6 @@ typedef struct _LDR_DATA_TABLE_ENTRY_COMPATIBLE {
 typedef LDR_DATA_TABLE_ENTRY_COMPATIBLE LDR_DATA_TABLE_ENTRY;
 typedef LDR_DATA_TABLE_ENTRY_COMPATIBLE* PLDR_DATA_TABLE_ENTRY;
 typedef LDR_DATA_TABLE_ENTRY* PCLDR_DATA_TABLE_ENTRY;
-
-typedef struct _RTL_BALANCED_NODE
-{
-    union
-    {
-        struct _RTL_BALANCED_NODE* Children[2];
-        struct
-        {
-            struct _RTL_BALANCED_NODE* Left;
-            struct _RTL_BALANCED_NODE* Right;
-        };
-    };
-    union
-    {
-        UCHAR Red : 1;
-        UCHAR Balance : 2;
-        ULONG_PTR ParentValue;
-    };
-} RTL_BALANCED_NODE, * PRTL_BALANCED_NODE;
 
 typedef BOOLEAN(NTAPI* PLDR_INIT_ROUTINE)(
     _In_ PVOID DllHandle,
