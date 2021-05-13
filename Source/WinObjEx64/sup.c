@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.C
 *
-*  VERSION:     1.88
+*  VERSION:     1.90
 *
-*  DATE:        15 Mar 2021
+*  DATE:        11 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -47,6 +47,65 @@ int __cdecl supxHandlesLookupCallback(
 int __cdecl supxHandlesLookupCallback2(
     void const* first,
     void const* second);
+
+ULONG MmProtectToValue[32] = {
+    PAGE_NOACCESS,
+    PAGE_READONLY,
+    PAGE_EXECUTE,
+    PAGE_EXECUTE_READ,
+    PAGE_READWRITE,
+    PAGE_WRITECOPY,
+    PAGE_EXECUTE_READWRITE,
+    PAGE_EXECUTE_WRITECOPY,
+    PAGE_NOACCESS,
+    PAGE_NOCACHE | PAGE_READONLY,
+    PAGE_NOCACHE | PAGE_EXECUTE,
+    PAGE_NOCACHE | PAGE_EXECUTE_READ,
+    PAGE_NOCACHE | PAGE_READWRITE,
+    PAGE_NOCACHE | PAGE_WRITECOPY,
+    PAGE_NOCACHE | PAGE_EXECUTE_READWRITE,
+    PAGE_NOCACHE | PAGE_EXECUTE_WRITECOPY,
+    PAGE_NOACCESS,
+    PAGE_GUARD | PAGE_READONLY,
+    PAGE_GUARD | PAGE_EXECUTE,
+    PAGE_GUARD | PAGE_EXECUTE_READ,
+    PAGE_GUARD | PAGE_READWRITE,
+    PAGE_GUARD | PAGE_WRITECOPY,
+    PAGE_GUARD | PAGE_EXECUTE_READWRITE,
+    PAGE_GUARD | PAGE_EXECUTE_WRITECOPY,
+    PAGE_NOACCESS,
+    PAGE_WRITECOMBINE | PAGE_READONLY,
+    PAGE_WRITECOMBINE | PAGE_EXECUTE,
+    PAGE_WRITECOMBINE | PAGE_EXECUTE_READ,
+    PAGE_WRITECOMBINE | PAGE_READWRITE,
+    PAGE_WRITECOMBINE | PAGE_WRITECOPY,
+    PAGE_WRITECOMBINE | PAGE_EXECUTE_READWRITE,
+    PAGE_WRITECOMBINE | PAGE_EXECUTE_WRITECOPY
+};
+
+/*
+* supConvertFromPteProtectionMask
+*
+* Purpose:
+*
+* Converts protection from PTE mask.
+*
+*/
+ULONG supConvertFromPteProtectionMask(
+    _In_ ULONG ProtectionMask
+)
+{
+    SetLastError(ERROR_SUCCESS);
+
+    if (ProtectionMask < RTL_NUMBER_OF_V2(MmProtectToValue)) {
+        return MmProtectToValue[ProtectionMask];
+    }
+    else {
+        SetLastError(ERROR_INVALID_PARAMETER);
+    }
+
+    return 0;
+}
 
 /*
 * supTreeListAddItem
@@ -822,6 +881,46 @@ PVOID supGetTokenInfo(
     }
 
     return Buffer;
+}
+
+/*
+* supGetLoadedModulesList
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+* 
+* Returned buffer must be freed with supHeapFree after usage.
+*
+*/
+PVOID supGetLoadedModulesList(
+    _Out_opt_ PULONG ReturnLength
+)
+{
+    return ntsupGetLoadedModulesListEx(FALSE,
+        ReturnLength,
+        supHeapAlloc,
+        supHeapFree);
+}
+
+/*
+* supGetLoadedModulesList2
+*
+* Purpose:
+*
+* Read list of loaded kernel modules.
+*
+* Returned buffer must be freed with supHeapFree after usage.
+*
+*/
+PVOID supGetLoadedModulesList2(
+    _Out_opt_ PULONG ReturnLength
+)
+{
+    return ntsupGetLoadedModulesListEx(TRUE,
+        ReturnLength,
+        supHeapAlloc,
+        supHeapFree);
 }
 
 /*
@@ -1618,123 +1717,6 @@ VOID supShutdown(
     if (g_pObjectTypesInfo) supHeapFree(g_pObjectTypesInfo);
 
     SdtFreeGlobals();
-}
-
-/*
-* supQueryProcessNameByEPROCESS
-*
-* Purpose:
-*
-* Lookups process name by given process object address.
-*
-* If nothing found return FALSE.
-*
-*/
-BOOL supQueryProcessNameByEPROCESS(
-    _In_ ULONG_PTR ValueOfEPROCESS,
-    _In_ PVOID ProcessList,
-    _Inout_ LPWSTR Buffer,
-    _In_ DWORD ccBuffer //size of buffer in chars
-)
-{
-    BOOL bFound = FALSE;
-    DWORD  CurrentProcessId = GetCurrentProcessId();
-    ULONG NextEntryDelta = 0, NumberOfProcesses = 0, i, j, ProcessListCount = 0;
-    HANDLE hProcess = NULL;
-    OBEX_PROCESS_LOOKUP_ENTRY* SavedProcessList;
-    PSYSTEM_HANDLE_INFORMATION_EX pHandles;
-
-    union {
-        PSYSTEM_PROCESSES_INFORMATION Processes;
-        PBYTE ListRef;
-    } List;
-
-    List.ListRef = (PBYTE)ProcessList;
-
-    //
-    // Calculate process handle list size.
-    //
-    do {
-
-        List.ListRef += NextEntryDelta;
-
-        if (List.Processes->ThreadCount)
-            NumberOfProcesses += 1;
-
-        NextEntryDelta = List.Processes->NextEntryDelta;
-
-    } while (NextEntryDelta);
-
-    List.ListRef = (PBYTE)ProcessList;
-
-    ProcessListCount = 0;
-
-    //
-    // Build process handle list.
-    //
-    SavedProcessList = (OBEX_PROCESS_LOOKUP_ENTRY*)supHeapAlloc(NumberOfProcesses * sizeof(OBEX_PROCESS_LOOKUP_ENTRY));
-    if (SavedProcessList) {
-
-        NextEntryDelta = 0;
-
-        do {
-
-            List.ListRef += NextEntryDelta;
-
-            if (List.Processes->ThreadCount) {
-
-                if (NT_SUCCESS(supOpenProcess(List.Processes->UniqueProcessId,
-                    PROCESS_QUERY_LIMITED_INFORMATION,
-                    &hProcess)))
-                {
-                    SavedProcessList[ProcessListCount].hProcess = hProcess;
-                    SavedProcessList[ProcessListCount].EntryPtr = List.ListRef;
-                    ProcessListCount += 1;
-                }
-            }
-
-            NextEntryDelta = List.Processes->NextEntryDelta;
-
-        } while (NextEntryDelta);
-
-        //
-        // Lookup this handles in system handle list.
-        //
-        pHandles = (PSYSTEM_HANDLE_INFORMATION_EX)supGetSystemInfo(SystemExtendedHandleInformation, NULL);
-        if (pHandles) {
-            for (i = 0; i < pHandles->NumberOfHandles; i++)
-                if (pHandles->Handles[i].UniqueProcessId == (ULONG_PTR)CurrentProcessId) //current process id
-                    for (j = 0; j < ProcessListCount; j++)
-                        if (pHandles->Handles[i].HandleValue == (ULONG_PTR)SavedProcessList[j].hProcess) //same handle value
-                            if ((ULONG_PTR)pHandles->Handles[i].Object == ValueOfEPROCESS) { //save object value
-
-                                List.ListRef = SavedProcessList[j].EntryPtr;
-
-                                _strncpy(
-                                    Buffer,
-                                    ccBuffer,
-                                    List.Processes->ImageName.Buffer,
-                                    List.Processes->ImageName.Length / sizeof(WCHAR));
-
-                                bFound = TRUE;
-                                break;
-                            }
-
-            supHeapFree(pHandles);
-        }
-
-        //
-        // Destroy process handle list.
-        //
-        for (i = 0; i < ProcessListCount; i++) {
-            if (SavedProcessList[i].hProcess)
-                NtClose(SavedProcessList[i].hProcess);
-        }
-
-        supHeapFree(SavedProcessList);
-    }
-
-    return bFound;
 }
 
 /*
@@ -7119,7 +7101,7 @@ VOID supQueryAlpcPortObjectTypeIndex(
         if (!NT_SUCCESS(ntStatus))
             break;
 
-        ntStatus = RtlCreateAcl(pDacl, sdLength - SECURITY_DESCRIPTOR_MIN_LENGTH, ACL_REVISION2);
+        ntStatus = RtlCreateAcl(pDacl, (ULONG)(sdLength - SECURITY_DESCRIPTOR_MIN_LENGTH), ACL_REVISION2);
         if (!NT_SUCCESS(ntStatus))
             break;
 
@@ -7354,4 +7336,172 @@ ULONG supAddLVColumnsFromArray(
     }   
 
     return iColumn;
+}
+
+/*
+* supShowInitError
+*
+* Purpose:
+*
+* Display initialization error depending on it type.
+*
+*/
+VOID supShowInitError(
+    _In_ DWORD ErrorType
+)
+{
+    WCHAR szErrorBuffer[MAX_PATH * 2];
+    LPWSTR lpError;
+
+    //
+    // CRT not initialized, no fancy swprinfs for you.
+    //
+    if (ErrorType == INIT_ERROR_NOCRT) {
+
+        MessageBox(GetDesktopWindow(), 
+            (LPCWSTR)T_WOBJINIT_NOCRT, 
+            (LPCWSTR)PROGRAM_NAME, 
+            MB_ICONWARNING | MB_OK);
+
+        return;
+    }
+
+    switch (ErrorType) {
+
+    case INIT_ERROR_NOHEAP:
+        lpError = L"Heap not allocated";
+        break;
+
+    case INIT_ERROR_NOTEMP:
+        lpError = L"%temp% not resolved";
+        break;
+
+    case INIT_ERROR_NOWINDIR:
+        lpError = L"Windows directory not resolved";
+        break;
+
+    case INIT_ERROR_NOSYS32DIR:
+        lpError = L"System32 directory not resolved";
+        break;
+
+    case INIT_ERROR_NOPROGDIR:
+        lpError = L"Program directory not resolved";
+        break;
+
+    case INIT_ERROR_NOCLASS:
+        lpError = L"Main window class not registered";
+        break;
+
+    case INIT_ERROR_NOMAINWND:
+        lpError = L"Main window not created";
+        break;
+
+    case INIT_ERROR_NOICCX:
+        lpError = L"Common Controls Library";
+        break;
+
+    case INIT_ERROR_NOLISTWND:
+        lpError = L"Main list window not created";
+        break;
+
+    case INIT_ERROR_NOTREEWND:
+        lpError = L"Main tree window not created";
+        break;
+
+    case INIT_ERROR_NOTLBARWND:
+        lpError = L"Main toolbar window not created";
+        break;
+
+    default:
+        lpError = L"Unknown initialization error";
+        break;
+    }
+
+    RtlStringCchPrintfSecure(szErrorBuffer, 
+        MAX_PATH * 2, 
+        TEXT("WinObjEx64 failed to initialize: %ws, abort"), 
+        lpError);
+    
+    MessageBox(GetDesktopWindow(), 
+        (LPWSTR)szErrorBuffer, 
+        (LPCWSTR)PROGRAM_NAME, 
+        MB_ICONWARNING | MB_OK);
+
+}
+
+/*
+* supExtractFileName
+*
+* Purpose:
+*
+* Return filename part from given path.
+*
+*/
+wchar_t* supExtractFileName(
+    _In_ const wchar_t* lpFullPath
+)
+{
+    wchar_t* p = (wchar_t*)lpFullPath;
+
+    if (lpFullPath == 0)
+        return 0;
+
+    while (*lpFullPath != (wchar_t)0) {
+        if (*lpFullPath == (wchar_t)'\\')
+            p = (wchar_t*)lpFullPath + 1;
+        lpFullPath++;
+    }
+    return p;
+}
+
+/*
+* supObjectDumpHandlePopupMenu
+*
+* Purpose:
+*
+* Object dump popup construction
+*
+*/
+VOID supObjectDumpHandlePopupMenu(
+    _In_ HWND hwndDlg
+)
+{
+    POINT pt1;
+    HMENU hMenu;
+
+    if (GetCursorPos(&pt1) == FALSE)
+        return;
+
+    hMenu = CreatePopupMenu();
+    if (hMenu) {
+        InsertMenu(hMenu, 0, MF_BYCOMMAND, ID_OBJECT_COPY, T_COPYVALUE);
+        InsertMenu(hMenu, 1, MF_BYCOMMAND, ID_ADDINFO_COPY, T_COPYADDINFO);
+        TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_LEFTALIGN, pt1.x, pt1.y, 0, hwndDlg, NULL);
+        DestroyMenu(hMenu);
+    }
+}
+
+/*
+* supObDumpShowError
+*
+* Purpose:
+*
+* Hide all windows for given hwnd and display error text with custom text if specified.
+*
+*/
+VOID supObDumpShowError(
+    _In_ HWND hwndDlg,
+    _In_opt_ LPWSTR lpMessageText
+)
+{
+    ENUMCHILDWNDDATA ChildWndData;
+
+    if (GetWindowRect(hwndDlg, &ChildWndData.Rect)) {
+        ChildWndData.nCmdShow = SW_HIDE;
+        EnumChildWindows(hwndDlg, supCallbackShowChildWindow, (LPARAM)&ChildWndData);
+    }
+    if (lpMessageText) {
+        SetWindowText(GetDlgItem(hwndDlg, ID_OBJECTDUMPERROR), lpMessageText);
+    }
+    ShowWindow(GetDlgItem(hwndDlg, ID_OBJECTDUMPERROR), SW_SHOW);
 }

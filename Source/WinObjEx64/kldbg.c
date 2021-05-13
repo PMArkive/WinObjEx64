@@ -4,9 +4,9 @@
 *
 *  TITLE:       KLDBG.C, based on KDSubmarine by Evilcry
 *
-*  VERSION:     1.88
+*  VERSION:     1.90
 *
-*  DATE:        15 Mar 2021
+*  DATE:        11 May 2021
 *
 *  MINIMUM SUPPORTED OS WINDOWS 7
 *
@@ -680,6 +680,94 @@ BOOL ObHeaderToNameInfoAddress(
 
     *HeaderAddress = Address;
     return TRUE;
+}
+
+#ifndef STRSAFE_IGNORE_NULLS
+#define STRSAFE_IGNORE_NULLS 0x00000100
+#endif
+
+/*
+* ObIsValidUnicodeStringWorker
+*
+* Purpose:
+*
+* Validate UNICODE_STRING structure, from ntstrsafe.h usermode variant.
+*
+*/
+NTSTATUS ObIsValidUnicodeStringWorker(
+    _In_ PCUNICODE_STRING SourceString,
+    _In_ CONST SIZE_T cchMax,
+    _In_ DWORD dwFlags
+)
+{
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+
+    __try {
+
+        //
+        // Make it fail on null ptr if corresponding flag is specified.
+        //
+        if (SourceString || !(dwFlags & STRSAFE_IGNORE_NULLS)) {
+
+            if ((SourceString->Buffer) &&
+                !kdAddressInUserModeRange((PVOID)SourceString->Buffer))
+            {
+                return STATUS_INVALID_PARAMETER;
+            }
+            
+            if (((SourceString->Length % sizeof(WCHAR)) != 0) ||
+                ((SourceString->MaximumLength % sizeof(WCHAR)) != 0) ||
+                (SourceString->Length > SourceString->MaximumLength) ||
+                (SourceString->MaximumLength > (cchMax * sizeof(WCHAR))))
+            {
+                ntStatus = STATUS_INVALID_PARAMETER;
+            }
+            else if ((SourceString->Buffer == NULL) &&
+                ((SourceString->Length != 0) || (SourceString->MaximumLength != 0)))
+            {
+                ntStatus = STATUS_INVALID_PARAMETER;
+            }
+
+
+        }
+
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        return STATUS_ACCESS_VIOLATION;
+    }
+
+    return ntStatus;
+}
+
+/*
+* ObIsValidUnicodeString
+*
+* Purpose:
+*
+* Validate UNICODE_STRING structure contents.
+*
+*/
+NTSTATUS ObIsValidUnicodeString(
+    _In_ PCUNICODE_STRING SourceString
+)
+{
+    return ObIsValidUnicodeStringWorker(SourceString, UNICODE_STRING_MAX_CHARS, 0);
+}
+
+/*
+* ObIsValidUnicodeStringEx
+*
+* Purpose:
+*
+* Validate UNICODE_STRING structure contents.
+*
+*/
+NTSTATUS ObIsValidUnicodeStringEx(
+    _In_ PCUNICODE_STRING SourceString,
+    _In_ DWORD dwFlags
+)
+{
+    return ObIsValidUnicodeStringWorker(SourceString, UNICODE_STRING_MAX_CHARS, dwFlags);
 }
 
 /*
@@ -1356,6 +1444,74 @@ BOOLEAN ObpFindHeaderCookie(
     }
 
     return bResult;
+}
+
+/*
+* ObpFindProcessObjectOffsets
+*
+* Purpose:
+*
+* Extract EPROCESS offsets from ntoskrnl routines.
+*
+*/
+BOOLEAN ObpFindProcessObjectOffsets(
+    _In_ PKLDBGCONTEXT Context
+)
+{
+    PBYTE   ptrCode;
+
+    ULONG_PTR NtOsBase;
+    HMODULE hNtOs;
+
+    hde64s  hs;
+
+    __try {
+
+        Context->PsUniqueProcessId.Valid = FALSE;
+        Context->PsProcessImageName.Valid = FALSE;
+
+        NtOsBase = (ULONG_PTR)Context->NtOsBase;
+        hNtOs = (HMODULE)Context->NtOsImageMap;
+
+        do {
+
+            ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetProcessId");
+            if (ptrCode == NULL)
+                break;
+
+            hde64_disasm((void*)(ptrCode), &hs);
+            if (hs.flags & F_ERROR)
+                break;
+
+            if (hs.len != 7)
+                break;
+
+            Context->PsUniqueProcessId.OffsetValue = *(PULONG)(ptrCode + 3);
+            Context->PsUniqueProcessId.Valid = TRUE;
+
+            ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetProcessImageFileName");
+            if (ptrCode == NULL)
+                break;
+
+            hde64_disasm((void*)(ptrCode), &hs);
+            if (hs.flags & F_ERROR)
+                break;
+
+            if (hs.len != 7)
+                break;
+
+            Context->PsProcessImageName.OffsetValue = *(PULONG)(ptrCode + 3);
+            Context->PsProcessImageName.Valid = TRUE;
+
+
+        } while (FALSE);
+
+    }
+    __except (WOBJ_EXCEPTION_FILTER_LOG) {
+        return FALSE;
+    }
+
+    return (Context->PsUniqueProcessId.Valid && Context->PsProcessImageName.Valid);
 }
 
 /*
@@ -2204,6 +2360,66 @@ BOOL ObDumpTypeInfo(
         ObjectTypeInfo,
         sizeof(OBJECT_TYPE_COMPATIBLE),
         NULL);
+}
+
+/*
+* ObGetProcessId
+*
+* Purpose:
+*
+* Read UniqueProcessId field from object of Process type.
+*
+*/
+BOOL ObGetProcessId(
+    _In_ ULONG_PTR ProcessObject,
+    _Out_ PHANDLE UniqueProcessId
+)
+{
+    ULONG_PTR kernelAddress;
+    HANDLE processId = 0;
+
+    *UniqueProcessId = NULL;
+
+    if (g_kdctx.PsUniqueProcessId.Valid == FALSE)
+        return FALSE;
+
+    kernelAddress = ProcessObject + g_kdctx.PsUniqueProcessId.OffsetValue;
+
+    if (!kdReadSystemMemory(kernelAddress, &processId, sizeof(processId)))
+        return FALSE;
+
+    *UniqueProcessId = processId;
+
+    return TRUE;
+}
+
+/*
+* ObGetProcessImageFileName
+*
+* Purpose:
+*
+* Read ImageFileName field from object of Process type.
+*
+*/
+BOOL ObGetProcessImageFileName(
+    _In_ ULONG_PTR ProcessObject,
+    _Inout_ PUNICODE_STRING ImageFileName
+)
+{
+    ULONG_PTR kernelAddress;
+    CHAR szImageFileName[16];
+
+    if (g_kdctx.PsProcessImageName.Valid == FALSE)
+        return FALSE;
+
+    kernelAddress = ProcessObject + g_kdctx.PsProcessImageName.OffsetValue;
+
+    szImageFileName[0] = 0;
+
+    if (!kdReadSystemMemory(kernelAddress, &szImageFileName, sizeof(szImageFileName)))
+        return FALSE;
+
+    return NT_SUCCESS(ntsupConvertToUnicode(szImageFileName, ImageFileName));
 }
 
 /*
@@ -3212,7 +3428,18 @@ BOOL kdQuerySystemInformation(
             }
         }
 
-        SystemModules = (PRTL_PROCESS_MODULES)supGetSystemInfo(SystemModuleInformation, NULL);
+        //
+        // Query user mode accessible ranges.
+        //
+        if (!supQueryUserModeAccessibleRange(
+            &Context->MinimumUserModeAddress,
+            &Context->MaximumUserModeAddress))
+        {
+            Context->MinimumUserModeAddress = 0x10000;
+            Context->MaximumUserModeAddress = 0x00007FFFFFFEFFFF;
+        }
+
+        SystemModules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
         if (SystemModules == NULL)
             break;
 
@@ -3386,6 +3613,216 @@ ULONG_PTR kdQueryWin32kApiSetTable(
     }
 
     return tableAddress;
+}
+
+/*
+* kdQueryMmUnloadedDrivers
+*
+* Purpose:
+*
+* Locate and dump kernel MmUnloadedDrivers array.
+*
+*/
+BOOLEAN kdQueryMmUnloadedDrivers(
+    _In_ PKLDBGCONTEXT Context,
+    _Out_ PVOID* UnloadedDrivers
+)
+{
+    BOOLEAN             bResult = FALSE;
+
+    HMODULE             hNtOs;
+    ULONG_PTR           NtOsBase, kernelAddress;
+
+    PBYTE               ptrCode;
+    PVOID               SectionBase;
+    ULONG               SectionSize = 0, bytesRead = 0;
+
+    PUNLOADED_DRIVERS   pvDrivers = NULL;
+    PWCHAR              pwStaticBuffer = NULL;
+    WORD                wMax, wLength;
+
+    ULONG               cbData;
+
+    ULONG               Index = 0, instLength = 0, tempOffset;
+    LONG                relativeValue = 0;
+    hde64s              hs;
+
+
+    *UnloadedDrivers = NULL;
+
+    if (!kdConnectDriver())
+        return FALSE;
+
+    NtOsBase = (ULONG_PTR)Context->NtOsBase;
+    hNtOs = (HMODULE)Context->NtOsImageMap;
+
+    do {
+
+        pwStaticBuffer = (PWCHAR)supHeapAlloc(UNICODE_STRING_MAX_BYTES + sizeof(UNICODE_NULL));
+        if (pwStaticBuffer == NULL)
+            break;
+
+        //
+        // Locate PAGE image section.
+        //
+        SectionBase = supLookupImageSectionByName(PAGE_SECTION,
+            PAGE_SECTION_LEGNTH,
+            (PVOID)hNtOs,
+            &SectionSize);
+
+        if ((SectionBase == 0) || (SectionSize == 0))
+            break;
+
+        if (g_NtBuildNumber == NT_WIN10_THRESHOLD1)
+            MiRememberUnloadedDriverPattern[0] = FIX_WIN10_THRESHOULD_REG;
+        else if (g_NtBuildNumber > NT_WIN10_20H1)
+            MiRememberUnloadedDriverPattern[0] = FIX_WIN10_20H1_REG;
+
+        ptrCode = (PBYTE)supFindPattern((PBYTE)SectionBase,
+            SectionSize,
+            MiRememberUnloadedDriverPattern,
+            sizeof(MiRememberUnloadedDriverPattern));
+
+        if (ptrCode == NULL)
+            break;
+
+        if (RtlPointerToOffset(SectionBase, ptrCode) + 32 > SectionSize)
+            break;
+
+        Index = 0;
+        tempOffset = 0;
+
+        do {
+
+            hde64_disasm(RtlOffsetToPointer(ptrCode, Index), &hs);
+            if (hs.flags & F_ERROR)
+                break;
+
+            instLength = hs.len;
+
+            //
+            // Call ExAlloc/MiAlloc
+            //
+            if (instLength == 5) {
+
+                if (ptrCode[Index] == 0xE8) {
+
+                    //
+                    // Fetch next instruction
+                    //
+                    tempOffset = Index + instLength;
+
+                    hde64_disasm(RtlOffsetToPointer(ptrCode, tempOffset), &hs);
+                    if (hs.flags & F_ERROR)
+                        break;
+
+                    //
+                    // Must be MOV
+                    //
+                    if (hs.len == 7) {
+
+                        if (ptrCode[tempOffset] == 0x48) {
+
+                            Index = tempOffset;
+                            instLength = hs.len;
+
+                            relativeValue = *(PLONG)(ptrCode + tempOffset + (hs.len - 4));
+                            break;
+
+                        }
+
+                    }
+                }
+
+            }
+
+            Index += instLength;
+
+        } while (Index < 32);
+
+        if ((relativeValue == 0) || (instLength == 0))
+            break;
+
+        //
+        // Resolve MmUnloadedDrivers.
+        //
+        kernelAddress = kdAdjustAddressToNtOsBase((ULONG_PTR)ptrCode, Index, instLength, relativeValue);
+        if (!kdAddressInNtOsImage((PVOID)kernelAddress))
+            break;
+
+        //
+        // Read ptr value.
+        //
+        if (!kdReadSystemMemoryEx(kernelAddress, &kernelAddress, sizeof(ULONG_PTR), &bytesRead))
+            break;
+
+        //
+        // Dump array to user mode.
+        //
+        cbData = MI_UNLOADED_DRIVERS * sizeof(UNLOADED_DRIVERS);
+        pvDrivers = (PUNLOADED_DRIVERS)supHeapAlloc(cbData);
+        if (pvDrivers) {
+
+            if (!kdReadSystemMemoryEx(kernelAddress, pvDrivers, cbData, &bytesRead))
+                break;
+
+            bResult = TRUE;
+
+            for (Index = 0; Index < MI_UNLOADED_DRIVERS; Index++) {
+
+                wMax = pvDrivers[Index].Name.MaximumLength;
+                wLength = pvDrivers[Index].Name.Length;
+
+                if ((wMax && wLength) && (wLength <= wMax)) {
+
+                    kernelAddress = (ULONG_PTR)pvDrivers[Index].Name.Buffer;
+                    bytesRead = wMax;
+                    *pwStaticBuffer = 0;
+
+                    if (!kdReadSystemMemoryEx(kernelAddress,
+                        pwStaticBuffer,
+                        bytesRead,
+                        &bytesRead))
+                    {
+                        bResult = FALSE;
+                        break;
+                    }
+
+                    pwStaticBuffer[bytesRead / sizeof(WCHAR)] = 0;
+
+                    RtlCreateUnicodeString(&pvDrivers[Index].Name,
+                        pwStaticBuffer);
+
+                }
+            }
+
+        }
+
+    } while (FALSE);
+
+    if (bResult == FALSE) {
+        if (pvDrivers) {
+
+            for (Index = 0; Index < MI_UNLOADED_DRIVERS; Index++) {
+
+                if (NT_SUCCESS(ObIsValidUnicodeString(&pvDrivers[Index].Name)))
+                {
+                    RtlFreeUnicodeString(&pvDrivers[Index].Name);
+                }
+
+            }
+
+            supHeapFree(pvDrivers);
+            pvDrivers = NULL;
+        }
+    }
+
+    if (pwStaticBuffer)
+        supHeapFree(pwStaticBuffer);
+
+    *UnloadedDrivers = pvDrivers;
+
+    return bResult;
 }
 
 /*
@@ -3602,6 +4039,11 @@ VOID kdInit(
     //
     if (IsFullAdmin == FALSE)
         return;
+
+    //
+    // Find EPROCESS offsets.
+    //
+    ObpFindProcessObjectOffsets(&g_kdctx);
 
     //
     // Helper drivers does not need DEBUG mode.

@@ -4,9 +4,9 @@
 *
 *  TITLE:       EXTRASPN.C
 *
-*  VERSION:     1.88
+*  VERSION:     1.90
 *
-*  DATE:        15 Dec 2020
+*  DATE:        11 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -30,6 +30,8 @@ ULONG PNSNumberOfObjects = 0;
 #endif
 
 #define T_NAMESPACENOTHING TEXT("No private namespaces found.")
+
+#define COLUMN_PNLIST_ROOTDIRADDRESS 2
 
 /*
 * PNDlgResetOutput
@@ -145,7 +147,7 @@ INT CALLBACK PNListCompareFunc(
     //
     // Sort addresses.
     //
-    if (lParamSort == 2) {
+    if (lParamSort == COLUMN_PNLIST_ROOTDIRADDRESS) {
         return supGetMaxOfTwoU64FromHex(PnDlgContext.ListView,
             lParam1,
             lParam2,

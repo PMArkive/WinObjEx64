@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2015 - 2020
+*  (C) COPYRIGHT AUTHORS, 2015 - 2021
 *
 *  TITLE:       TREELIST.H
 *
-*  VERSION:     1.30
+*  VERSION:     1.31
 *
-*  DATE:        22 July 2020
+*  DATE:        02 May 2021
 *
 *  Tree-List custom control header file.
 *
@@ -16,6 +16,10 @@
 * PARTICULAR PURPOSE.
 *
 *******************************************************************************/
+
+#if defined (_MSC_VER) && (_MSC_VER >= 1020)
+#pragma once
+#endif
 
 #define WC_TREELISTA            "CustomTreeList"
 #define WC_TREELISTW            L"CustomTreeList"

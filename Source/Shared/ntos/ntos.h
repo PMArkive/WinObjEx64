@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.165
+*  VERSION:     1.170
 *
-*  DATE:        26 Apr 2021
+*  DATE:        11 May 2021
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -2512,6 +2512,16 @@ typedef struct _SECTION_IMAGE_INFORMATION {
     ULONG CheckSum;
 } SECTION_IMAGE_INFORMATION, *PSECTION_IMAGE_INFORMATION;
 
+typedef struct _MI_EXTRA_IMAGE_INFORMATION {
+    ULONG SizeOfHeaders;
+    ULONG SizeOfImage;
+} MI_EXTRA_IMAGE_INFORMATION, *PMI_EXTRA_IMAGE_INFORMATION;
+
+typedef struct _MI_SECTION_IMAGE_INFORMATION {
+    SECTION_IMAGE_INFORMATION ExportedImageInformation;
+    MI_EXTRA_IMAGE_INFORMATION InternalImageInformation;
+} MI_SECTION_IMAGE_INFORMATION, *PMI_SECTION_IMAGE_INFORMATION;
+
 typedef struct _SECTION_IMAGE_INFORMATION64 {
     ULONGLONG TransferAddress;
     ULONG ZeroBits;
@@ -4344,6 +4354,436 @@ typedef struct _FILE_OBJECT* PFILE_OBJECT;
 */
 
 /*
+* MM START
+*/
+typedef ULONG MMSECTION_FLAGS2;
+
+typedef struct _MMEXTEND_INFO {
+    ULONG_PTR CommittedSize;
+    ULONG ReferenceCount;
+} MMEXTEND_INFO, * PMMEXTEND_INFO; /* size: 0x0010 */
+
+//
+// Flags definitions valid only for Windows 10.
+//
+typedef struct _MMSECTION_FLAGS {
+    struct {
+        unsigned int BeingDeleted : 1; /* bit position: 0 */
+        unsigned int BeingCreated : 1; /* bit position: 1 */
+        unsigned int BeingPurged : 1; /* bit position: 2 */
+        unsigned int NoModifiedWriting : 1; /* bit position: 3 */
+        unsigned int FailAllIo : 1; /* bit position: 4 */
+        unsigned int Image : 1; /* bit position: 5 */
+        unsigned int Based : 1; /* bit position: 6 */
+        unsigned int File : 1; /* bit position: 7 */
+        unsigned int AttemptingDelete : 1; /* bit position: 8 */
+        unsigned int PrefetchCreated : 1; /* bit position: 9 */
+        unsigned int PhysicalMemory : 1; /* bit position: 10 */
+        unsigned int ImageControlAreaOnRemovableMedia : 1; /* bit position: 11 */  //CopyOnWrite
+        unsigned int Reserve : 1; /* bit position: 12 */
+        unsigned int Commit : 1; /* bit position: 13 */
+        unsigned int NoChange : 1; /* bit position: 14 */
+        unsigned int WasPurged : 1; /* bit position: 15 */
+        unsigned int UserReference : 1; /* bit position: 16 */
+        unsigned int GlobalMemory : 1; /* bit position: 17 */
+        unsigned int DeleteOnClose : 1; /* bit position: 18 */
+        unsigned int FilePointerNull : 1; /* bit position: 19 */
+        unsigned int PreferredNode : 6; /* bit position: 20 */
+        unsigned int GlobalOnlyPerSession : 1; /* bit position: 26 */
+        unsigned int UserWritable : 1; /* bit position: 27 */
+        unsigned int SystemVaAllocated : 1; /* bit position: 28 */
+        unsigned int PreferredFsCompressionBoundary : 1; /* bit position: 29 */
+        unsigned int UsingFileExtents : 1; /* bit position: 30 */
+        unsigned int PageSize64K : 1; /* bit position: 31 */
+    };
+} MMSECTION_FLAGS, * PMMSECTION_FLAGS; /* size: 0x0004 */
+
+//
+// Flags definitions valid only for Windows 10.
+//
+typedef struct _SEGMENT_FLAGS {
+    union {
+        struct {
+            USHORT TotalNumberOfPtes4132 : 10; /* bit position: 0 */
+            USHORT Spare0 : 2; /* bit position: 10 */
+            USHORT LargePages : 1; /* bit position: 12 */
+            USHORT DebugSymbolsLoaded : 1; /* bit position: 13 */
+            USHORT WriteCombined : 1; /* bit position: 14 */
+            USHORT NoCache : 1; /* bit position: 15 */
+        }; 
+        USHORT Short0;
+    }; /* size: 0x0002 */
+    union {
+        struct {
+            UCHAR FloppyMedia : 1; /* bit position: 0 */
+            UCHAR DefaultProtectionMask : 5; /* bit position: 1 */
+            UCHAR Binary32 : 1; /* bit position: 6 */
+            UCHAR ContainsDebug : 1; /* bit position: 7 */
+        };
+        UCHAR UChar1;
+    }; /* size: 0x0001 */
+    union {
+        struct {
+            UCHAR ForceCollision : 1; /* bit position: 0 */
+            UCHAR ImageSigningType : 3; /* bit position: 1 */
+            UCHAR ImageSigningLevel : 4; /* bit position: 4 */
+        };
+        UCHAR UChar2;
+    };
+} SEGMENT_FLAGS, * PSEGMENT_FLAGS; /* size: 0x0004 */
+
+typedef struct _MI_SYSTEM_CACHE_VIEW_ATTRIBUTES {
+    union {
+        ULONGLONG NumberOfPtes : 6;
+        ULONGLONG PartitionId : 10;
+        ULONGLONG Spare : 2;
+        ULONGLONG SectionOffset : 48;
+    } u1;
+} MI_SYSTEM_CACHE_VIEW_ATTRIBUTES, * PMI_SYSTEM_CACHE_VIEW_ATTRIBUTES;
+
+#define VIEW_MAP_TYPE_PROCESS         1
+#define VIEW_MAP_TYPE_SESSION         2
+#define VIEW_MAP_TYPE_SYSTEM_CACHE    3
+
+typedef struct _MI_REVERSE_VIEW_MAP {
+    struct _LIST_ENTRY ViewLinks;
+    union {
+        VOID* SystemCacheVa;
+        VOID* SessionViewVa;
+        struct _EPROCESS* VadsProcess;
+        ULONG Type : 2;
+    } u1;
+    union {
+        struct _SUBSECTION* Subsection;
+        ULONG SubsectionType : 1;
+    } u2;
+    union {
+        struct _MI_SYSTEM_CACHE_VIEW_ATTRIBUTES SystemCacheAttributes;
+        ULONGLONG SectionOffset;
+    } u3;
+} MI_REVERSE_VIEW_MAP, * PMI_REVERSE_VIEW_MAP; /* size: 0x0028 */
+
+typedef struct _RTL_BALANCED_NODE {
+    union
+    {
+        struct _RTL_BALANCED_NODE* Children[2];
+        struct
+        {
+            struct _RTL_BALANCED_NODE* Left;
+            struct _RTL_BALANCED_NODE* Right;
+        };
+    };
+    union
+    {
+        UCHAR Red : 1;
+        UCHAR Balance : 2;
+        ULONG_PTR ParentValue;
+    };
+} RTL_BALANCED_NODE, * PRTL_BALANCED_NODE;
+
+typedef struct _SEGMENT {
+
+    struct _CONTROL_AREA* ControlArea;
+    unsigned long TotalNumberOfPtes;
+    SEGMENT_FLAGS SegmentFlags;
+    ULONG_PTR NumberOfCommittedPages;
+    ULONG_PTR SizeOfSegment;
+
+    union {
+        struct _MMEXTEND_INFO* ExtendInfo;
+        void* BasedAddress;
+    } u1;
+
+    EX_PUSH_LOCK SegmentLock;
+
+    union {
+        union {
+            ULONG_PTR ImageCommitment;
+            ULONG CreatingProcessId;
+        };
+    } u2;
+
+    union {
+        union {
+            struct _MI_SECTION_IMAGE_INFORMATION* ImageInformation;
+            void* FirstMappedVa;
+        };
+    } u3;
+
+    struct _MMPTE* PrototypePte;
+
+} SEGMENT, * PSEGMENT;  /* size: 0x0048 */
+
+typedef struct _CONTROL_AREA_COMPAT {
+
+    SEGMENT* Segment;
+    LIST_ENTRY ListHead;
+    ULONG_PTR NumberOfSectionReferences;
+    ULONG_PTR NumberOfPfnReferences;
+    ULONG_PTR NumberOfMappedViews;
+    ULONG_PTR NumberOfUserReferences;
+
+    union {
+        union {
+            ULONG LongFlags;
+            MMSECTION_FLAGS Flags;
+        };
+    } u;
+
+    union {
+        union {
+            ULONG LongFlags;
+            MMSECTION_FLAGS2 Flags;
+        };
+    } u1;
+
+    EX_FAST_REF FilePointer;
+    volatile LONG ControlAreaLock;
+    ULONG ModifiedWriteCount;
+    struct _MI_CONTROL_AREA_WAIT_BLOCK* WaitList;
+
+    union
+    {
+        struct
+        {
+            union
+            {
+                ULONG NumberOfSystemCacheViews;
+                ULONG ImageRelocationStartBit;
+            };
+            union
+            {
+                volatile LONG WritableUserReferences;
+                struct
+                {
+                    unsigned long ImageRelocationSizeIn64k : 16; /* bit position: 0 */
+                    unsigned long LargePage : 1; /* bit position: 16 */
+                    unsigned long SystemImage : 1; /* bit position: 17 */
+                    unsigned long StrongCode : 2; /* bit position: 18 */
+                    unsigned long CantMove : 1; /* bit position: 20 */
+                    unsigned long BitMap : 2; /* bit position: 21 */
+                    unsigned long ImageActive : 1; /* bit position: 23 */
+                };
+            };
+            union
+            {
+                ULONG FlushInProgressCount;
+                ULONG NumberOfSubsections;
+                struct _MI_IMAGE_SECURITY_REFERENCE* SeImageStub;
+            };
+        } e2;
+    } u2;
+
+    //
+    // Incomplete definition, tail is version dependent.
+    //
+
+} CONTROL_AREA_COMPAT, * PCONTROL_AREA_COMPAT;
+
+//
+// N.B. 
+// Only valid for Win10.
+// Change between Win10 versions.
+//
+typedef struct _MMVAD_SHORT {
+    union
+    {
+        struct
+        {
+            struct _MMVAD_SHORT* NextVad;
+            void* ExtraCreateInfo;
+        };
+        struct _RTL_BALANCED_NODE VadNode;
+    };
+
+    ULONG StartingVpn;
+    ULONG EndingVpn;
+    UCHAR StartingVpnHigh;
+    UCHAR EndingVpnHigh;
+    UCHAR CommitChargeHigh;
+    UCHAR SpareNT64VadUChar;
+    LONG ReferenceCount;
+    EX_PUSH_LOCK PushLock;
+
+    ULONG LongFlags;
+    ULONG LongFlags1;
+
+    struct _MI_VAD_EVENT_BLOCK* EventList;
+
+} MMVAD_SHORT, * PMMVAD_SHORT;  /* size: 0x0040 */
+
+typedef struct _MI_VAD_SEQUENTIAL_INFO {
+
+    struct {
+        ULONG_PTR Length : 12; /* bit position: 0 */
+        ULONG_PTR Vpn : 52; /* bit position: 12 */
+    };
+
+} MI_VAD_SEQUENTIAL_INFO, * PMI_VAD_SEQUENTIAL_INFO; /* size: 0x0008 */
+
+//
+// N.B. 
+// Only valid for Win10.
+// Flags meanings change between Win10 versions.
+//
+typedef struct _MMVAD_FLAGS {
+    struct
+    {
+        ULONG VadType : 3; /* bit position: 0 */
+        ULONG Protection : 5; /* bit position: 3 */
+        ULONG PreferredNode : 6; /* bit position: 8 */
+        ULONG PrivateMemory : 1; /* bit position: 14 */
+        ULONG PrivateFixup : 1; /* bit position: 15 */
+        ULONG Enclave : 1; /* bit position: 16 */
+        ULONG PageSize64K : 1; /* bit position: 17 */
+        ULONG RfgControlStack : 1; /* bit position: 18 */
+        ULONG Spare : 8; /* bit position: 19 */
+        ULONG NoChange : 1; /* bit position: 27 */
+        ULONG ManySubsections : 1; /* bit position: 28 */
+        ULONG DeleteInProgress : 1; /* bit position: 29 */
+        ULONG LockContended : 1; /* bit position: 30 */
+        ULONG Lock : 1; /* bit position: 31 */
+    };
+} MMVAD_FLAGS, * PMMVAD_FLAGS; /* size: 0x0004 */
+
+//
+// N.B. 
+// Only valid for Win10.
+// Flags meanings change between Win10 versions.
+//
+typedef struct _MMVAD_FLAGS1 {
+    struct
+    {
+        ULONG CommitCharge : 31; /* bit position: 0 */
+        ULONG MemCommit : 1; /* bit position: 31 */
+    };
+} MMVAD_FLAGS1, * PMMVAD_FLAGS1; /* size: 0x0004 */
+
+//
+// N.B. 
+// Only valid for Win10.
+// Flags meanings change between Win10 versions.
+//
+typedef struct _MMVAD_FLAGS2 {
+    struct
+    {
+        ULONG FileOffset : 24; /* bit position: 0 */
+        ULONG Large : 1; /* bit position: 24 */
+        ULONG TrimBehind : 1; /* bit position: 25 */
+        ULONG Inherit : 1; /* bit position: 26 */
+        ULONG NoValidationNeeded : 1; /* bit position: 27 */
+        ULONG PrivateDemandZero : 1; /* bit position: 28 */
+        ULONG Spare : 3; /* bit position: 29 */
+    };
+} MMVAD_FLAGS2, * PMMVAD_FLAGS2; /* size: 0x0004 */
+
+typedef struct _MMVAD {
+
+    struct _MMVAD_SHORT Core;
+
+    union
+    {
+        union
+        {
+            ULONG LongFlags2;
+            volatile struct _MMVAD_FLAGS2 VadFlags2;
+        };
+    } u2;
+
+    struct _SUBSECTION* Subsection;
+    struct _MMPTE* FirstPrototypePte;
+    struct _MMPTE* LastContiguousPte;
+    LIST_ENTRY ViewLinks;
+    struct _EPROCESS* VadsProcess;
+
+    union
+    {
+        union
+        {
+            struct _MI_VAD_SEQUENTIAL_INFO SequentialVa;
+            struct _MMEXTEND_INFO* ExtendedInfo;
+        };
+    } u4;
+
+    FILE_OBJECT* FileObject;
+
+} MMVAD, * PMMVAD; /* size: 0x0088 */
+
+typedef struct _MMVIEW {
+    ULONGLONG Entry;
+    union {
+        ULONGLONG Writable : 1;
+        struct _CONTROL_AREA* ControlArea; 
+    };
+    LIST_ENTRY ViewLinks; 
+    PVOID SessionViewVa;
+    ULONG SessionId;
+} MMVIEW, *PMMVIEW;
+
+typedef struct _MI_IMAGE_ENTRY_IN_SESSION {
+    LIST_ENTRY Link;
+    PVOID Address;
+
+    //
+    // Incomplete and incorrect.
+    //
+
+} MI_IMAGE_ENTRY_IN_SESSION, * PMI_IMAGE_ENTRY_IN_SESSION;
+
+typedef struct _SUBSECTION_COMPAT {
+
+    struct _CONTROL_AREA* ControlArea;
+    struct _MMPTE* SubsectionBase;
+    struct _SUBSECTION* NextSubsection;
+
+    //
+    // Incomplete definition.
+    //
+
+} SUBSECTION_COMPAT, * PSUBSECTION_COMPAT;
+
+//
+// This is Windows 10 only Section Object definition.
+// 
+// N.B. It completely differs from anything else.
+//
+typedef struct _SECTION_COMPAT {
+
+    RTL_BALANCED_NODE SectionNode;
+    ULONG_PTR StartingVpn;
+    ULONG_PTR EndingVpn;
+
+    union {
+        union {
+            struct _CONTROL_AREA* ControlArea;
+            struct _FILE_OBJECT* FileObject;
+            struct {
+                ULONG_PTR RemoteImageFileObject : 1; /* bit position: 0 */
+                ULONG_PTR RemoteDataFileObject : 1; /* bit position: 1 */
+            };
+        };
+    } u1;
+
+    ULONG_PTR SizeOfSection;
+
+    union {
+        ULONG LongFlags;
+        MMSECTION_FLAGS Flags;
+    } u;
+
+    struct {
+        ULONG InitialPageProtection : 12; /* bit position: 0 */
+        ULONG SessionId : 19; /* bit position: 12 */
+        ULONG NoValidationNeeded : 1; /* bit position: 31 */
+    };
+
+} SECTION_COMPAT, * PSECTION_COMPAT;  /* size: 0x0040 */
+
+/*
+* MM END
+*/
+
+/*
 ** Callbacks START
 */
 
@@ -5903,6 +6343,24 @@ typedef struct _KUSER_SHARED_DATA {
 */
 
 /*
+** MM UNLOADED DRIVERS START
+*/
+
+typedef struct _UNLOADED_DRIVERS {
+    UNICODE_STRING Name;
+    PVOID StartAddress;
+    PVOID EndAddress;
+    LARGE_INTEGER CurrentTime;
+} UNLOADED_DRIVERS, * PUNLOADED_DRIVERS;
+
+#define MI_UNLOADED_DRIVERS 50
+
+/*
+** MM UNLOADED DRIVERS END
+*/
+
+
+/*
 ** FLT MANAGER START
 */
 
@@ -6440,25 +6898,6 @@ typedef struct _LDR_DATA_TABLE_ENTRY_COMPATIBLE {
 typedef LDR_DATA_TABLE_ENTRY_COMPATIBLE LDR_DATA_TABLE_ENTRY;
 typedef LDR_DATA_TABLE_ENTRY_COMPATIBLE* PLDR_DATA_TABLE_ENTRY;
 typedef LDR_DATA_TABLE_ENTRY* PCLDR_DATA_TABLE_ENTRY;
-
-typedef struct _RTL_BALANCED_NODE
-{
-    union
-    {
-        struct _RTL_BALANCED_NODE* Children[2];
-        struct
-        {
-            struct _RTL_BALANCED_NODE* Left;
-            struct _RTL_BALANCED_NODE* Right;
-        };
-    };
-    union
-    {
-        UCHAR Red : 1;
-        UCHAR Balance : 2;
-        ULONG_PTR ParentValue;
-    };
-} RTL_BALANCED_NODE, * PRTL_BALANCED_NODE;
 
 typedef BOOLEAN(NTAPI* PLDR_INIT_ROUTINE)(
     _In_ PVOID DllHandle,
