@@ -721,10 +721,8 @@ BOOLEAN supIsFileImageSection(
     _In_ ULONG AllocationAttributes);
 
 BOOLEAN supIsDriverShimmed(
+    _In_ PKSE_ENGINE_DUMP KseEngineDump,
     _In_ PVOID DriverBaseAddress);
-
-VOID supDestroyShimmedDriversList(
-    _In_ PLIST_ENTRY ListHead);
 
 BOOL supListViewExportToFile(
     _In_ LPWSTR FileName,

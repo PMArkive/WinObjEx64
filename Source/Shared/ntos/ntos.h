@@ -4368,33 +4368,33 @@ typedef struct _MMEXTEND_INFO {
 //
 typedef struct _MMSECTION_FLAGS {
     struct {
-        unsigned int BeingDeleted : 1; /* bit position: 0 */
-        unsigned int BeingCreated : 1; /* bit position: 1 */
-        unsigned int BeingPurged : 1; /* bit position: 2 */
-        unsigned int NoModifiedWriting : 1; /* bit position: 3 */
-        unsigned int FailAllIo : 1; /* bit position: 4 */
-        unsigned int Image : 1; /* bit position: 5 */
-        unsigned int Based : 1; /* bit position: 6 */
-        unsigned int File : 1; /* bit position: 7 */
-        unsigned int AttemptingDelete : 1; /* bit position: 8 */
-        unsigned int PrefetchCreated : 1; /* bit position: 9 */
-        unsigned int PhysicalMemory : 1; /* bit position: 10 */
-        unsigned int ImageControlAreaOnRemovableMedia : 1; /* bit position: 11 */  //CopyOnWrite
-        unsigned int Reserve : 1; /* bit position: 12 */
-        unsigned int Commit : 1; /* bit position: 13 */
-        unsigned int NoChange : 1; /* bit position: 14 */
-        unsigned int WasPurged : 1; /* bit position: 15 */
-        unsigned int UserReference : 1; /* bit position: 16 */
-        unsigned int GlobalMemory : 1; /* bit position: 17 */
-        unsigned int DeleteOnClose : 1; /* bit position: 18 */
-        unsigned int FilePointerNull : 1; /* bit position: 19 */
-        unsigned int PreferredNode : 6; /* bit position: 20 */
-        unsigned int GlobalOnlyPerSession : 1; /* bit position: 26 */
-        unsigned int UserWritable : 1; /* bit position: 27 */
-        unsigned int SystemVaAllocated : 1; /* bit position: 28 */
-        unsigned int PreferredFsCompressionBoundary : 1; /* bit position: 29 */
-        unsigned int UsingFileExtents : 1; /* bit position: 30 */
-        unsigned int PageSize64K : 1; /* bit position: 31 */
+        UINT BeingDeleted : 1; /* bit position: 0 */
+        UINT BeingCreated : 1; /* bit position: 1 */
+        UINT BeingPurged : 1; /* bit position: 2 */
+        UINT NoModifiedWriting : 1; /* bit position: 3 */
+        UINT FailAllIo : 1; /* bit position: 4 */
+        UINT Image : 1; /* bit position: 5 */
+        UINT Based : 1; /* bit position: 6 */
+        UINT File : 1; /* bit position: 7 */
+        UINT AttemptingDelete : 1; /* bit position: 8 */
+        UINT PrefetchCreated : 1; /* bit position: 9 */
+        UINT PhysicalMemory : 1; /* bit position: 10 */
+        UINT ImageControlAreaOnRemovableMedia : 1; /* bit position: 11 */  //CopyOnWrite
+        UINT Reserve : 1; /* bit position: 12 */
+        UINT Commit : 1; /* bit position: 13 */
+        UINT NoChange : 1; /* bit position: 14 */
+        UINT WasPurged : 1; /* bit position: 15 */
+        UINT UserReference : 1; /* bit position: 16 */
+        UINT GlobalMemory : 1; /* bit position: 17 */
+        UINT DeleteOnClose : 1; /* bit position: 18 */
+        UINT FilePointerNull : 1; /* bit position: 19 */
+        UINT PreferredNode : 6; /* bit position: 20 */
+        UINT GlobalOnlyPerSession : 1; /* bit position: 26 */
+        UINT UserWritable : 1; /* bit position: 27 */
+        UINT SystemVaAllocated : 1; /* bit position: 28 */
+        UINT PreferredFsCompressionBoundary : 1; /* bit position: 29 */
+        UINT UsingFileExtents : 1; /* bit position: 30 */
+        UINT PageSize64K : 1; /* bit position: 31 */
     };
 } MMSECTION_FLAGS, * PMMSECTION_FLAGS; /* size: 0x0004 */
 

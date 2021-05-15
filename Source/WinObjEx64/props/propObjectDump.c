@@ -321,7 +321,7 @@ HTREEITEM propObDumpSetString(
 * Dump ULONG 4 bytes / USHORT 2 bytes to the treelist.
 *
 */
-VOID propObDumpUlong(
+HTREEITEM propObDumpUlong(
     _In_ HWND TreeList,
     _In_ HTREEITEM hParent,
     _In_ LPWSTR lpszName,
@@ -386,7 +386,7 @@ VOID propObDumpUlong(
         subitems.FontColor = FontColor;
     }
 
-    supTreeListAddItem(
+    return supTreeListAddItem(
         TreeList,
         hParent,
         TVIF_TEXT | TVIF_STATE,
@@ -1157,7 +1157,7 @@ PROP_OBJECT_DUMP_ROUTINE(propObDumpDriverObject)
     INT                     i, j;
     HTREEITEM               h_tviRootItem, h_tviSubItem;
     PRTL_PROCESS_MODULES    pModules;
-    PVOID                   pObj;
+    PVOID                   pObj, IopInvalidDeviceRequest;
     POBJREF                 LookupObject = NULL;
     LPWSTR                  lpType;
     DRIVER_OBJECT           drvObject;
@@ -1365,8 +1365,11 @@ PROP_OBJECT_DUMP_ROUTINE(propObDumpDriverObject)
         RtlSecureZeroMemory(&ntosEntry, sizeof(ntosEntry));
         pModules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
 
-        if (g_kdctx.IopInvalidDeviceRequest == NULL)
-            g_kdctx.IopInvalidDeviceRequest = kdQueryIopInvalidDeviceRequest();
+        if (g_kdctx.Data->IopInvalidDeviceRequest == NULL) {
+            g_kdctx.Data->IopInvalidDeviceRequest = kdQueryIopInvalidDeviceRequest();
+        }
+
+        IopInvalidDeviceRequest = g_kdctx.Data->IopInvalidDeviceRequest;
 
         for (i = 0; i < IRP_MJ_MAXIMUM_FUNCTION; i++) {
 
@@ -1374,10 +1377,13 @@ PROP_OBJECT_DUMP_ROUTINE(propObDumpDriverObject)
                 continue;
             }
 
-            //skip ntoskrnl default irp handler
-            //warning may skip actual trampoline hook
-            if (g_kdctx.IopInvalidDeviceRequest) {
-                if ((ULONG_PTR)drvObject.MajorFunction[i] == (ULONG_PTR)g_kdctx.IopInvalidDeviceRequest) {
+            //
+            // Skip ntoskrnl default IRP handler.
+            // 
+            // WARNING: This may skip actual trampoline hook.
+            //
+            if (IopInvalidDeviceRequest) {
+                if ((ULONG_PTR)drvObject.MajorFunction[i] == (ULONG_PTR)IopInvalidDeviceRequest) {
 
                     propObDumpAddress(
                         g_TreeList,
@@ -1393,8 +1399,13 @@ PROP_OBJECT_DUMP_ROUTINE(propObDumpDriverObject)
             }
 
             //DRIVER_OBJECT->MajorFunction[i]
-            propObDumpAddressWithModule(g_TreeList, h_tviSubItem, T_IRP_MJ_FUNCTION[i], drvObject.MajorFunction[i],
-                pModules, ldrEntry.DllBase, ldrEntry.SizeOfImage);
+            propObDumpAddressWithModule(g_TreeList, 
+                h_tviSubItem, 
+                T_IRP_MJ_FUNCTION[i], 
+                drvObject.MajorFunction[i],
+                pModules, 
+                ldrEntry.DllBase, 
+                ldrEntry.SizeOfImage);
         }
 
         //

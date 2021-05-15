@@ -22,7 +22,7 @@
 #include "kldbg_patterns.h"
 
 //
-// Global variables, declared as extern in kldbg.h
+// Global variables
 //
 
 //Context
@@ -35,6 +35,9 @@ ULONG g_NtBuildNumber;
 NOTIFICATION_CALLBACKS g_SystemCallbacks;
 
 UCHAR ObpInfoMaskToOffset[0x100];
+
+//Context private data
+KLDBGPDATA g_kdpdata;
 
 BOOL kdExtractDriver(
     _In_ WCHAR* szDriverPath);
@@ -1465,44 +1468,54 @@ BOOLEAN ObpFindProcessObjectOffsets(
 
     hde64s  hs;
 
+    PEPROCESS_OFFSET pOffsetProcessId = &Context->Data->PsUniqueProcessId;
+    PEPROCESS_OFFSET pOffsetImageName = &Context->Data->PsProcessImageName;
+
     __try {
 
-        Context->PsUniqueProcessId.Valid = FALSE;
-        Context->PsProcessImageName.Valid = FALSE;
+        pOffsetProcessId->Valid = FALSE;
+        pOffsetImageName->Valid = FALSE;
 
         NtOsBase = (ULONG_PTR)Context->NtOsBase;
         hNtOs = (HMODULE)Context->NtOsImageMap;
 
         do {
 
-            ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetProcessId");
-            if (ptrCode == NULL)
-                break;
+            if (pOffsetProcessId->Valid == FALSE) {
 
-            hde64_disasm((void*)(ptrCode), &hs);
-            if (hs.flags & F_ERROR)
-                break;
+                ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetProcessId");
+                if (ptrCode == NULL)
+                    break;
 
-            if (hs.len != 7)
-                break;
+                hde64_disasm((void*)(ptrCode), &hs);
+                if (hs.flags & F_ERROR)
+                    break;
 
-            Context->PsUniqueProcessId.OffsetValue = *(PULONG)(ptrCode + 3);
-            Context->PsUniqueProcessId.Valid = TRUE;
+                if (hs.len != 7)
+                    break;
 
-            ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetProcessImageFileName");
-            if (ptrCode == NULL)
-                break;
+                pOffsetProcessId->OffsetValue = *(PULONG)(ptrCode + 3);
+                pOffsetProcessId->Valid = TRUE;
 
-            hde64_disasm((void*)(ptrCode), &hs);
-            if (hs.flags & F_ERROR)
-                break;
+            }
 
-            if (hs.len != 7)
-                break;
+            if (pOffsetImageName->Valid == FALSE) {
 
-            Context->PsProcessImageName.OffsetValue = *(PULONG)(ptrCode + 3);
-            Context->PsProcessImageName.Valid = TRUE;
+                ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetProcessImageFileName");
+                if (ptrCode == NULL)
+                    break;
 
+                hde64_disasm((void*)(ptrCode), &hs);
+                if (hs.flags & F_ERROR)
+                    break;
+
+                if (hs.len != 7)
+                    break;
+
+                pOffsetImageName->OffsetValue = *(PULONG)(ptrCode + 3);
+                pOffsetImageName->Valid = TRUE;
+
+            }
 
         } while (FALSE);
 
@@ -1511,7 +1524,7 @@ BOOLEAN ObpFindProcessObjectOffsets(
         return FALSE;
     }
 
-    return (Context->PsUniqueProcessId.Valid && Context->PsProcessImageName.Valid);
+    return (pOffsetProcessId->Valid && pOffsetImageName->Valid);
 }
 
 /*
@@ -1772,7 +1785,7 @@ BOOL kdFindKiServiceTable(
             //
             // If KeServiceDescriptorTableShadow is not extracted then extract it.
             //
-            if (g_kdctx.KeServiceDescriptorTableShadowPtr == 0) {
+            if (g_kdctx.Data->KeServiceDescriptorTableShadowPtr == 0) {
 
                 //
                 // Locate .text image section.
@@ -1816,11 +1829,11 @@ BOOL kdFindKiServiceTable(
                 if (!kdAddressInNtOsImage((PVOID)Address))
                     break;
 
-                g_kdctx.KeServiceDescriptorTableShadowPtr = Address;
+                g_kdctx.Data->KeServiceDescriptorTableShadowPtr = Address;
 
             }
             else {
-                Address = g_kdctx.KeServiceDescriptorTableShadowPtr;
+                Address = g_kdctx.Data->KeServiceDescriptorTableShadowPtr;
             }
 
 
@@ -2380,10 +2393,10 @@ BOOL ObGetProcessId(
 
     *UniqueProcessId = NULL;
 
-    if (g_kdctx.PsUniqueProcessId.Valid == FALSE)
+    if (g_kdctx.Data->PsUniqueProcessId.Valid == FALSE)
         return FALSE;
 
-    kernelAddress = ProcessObject + g_kdctx.PsUniqueProcessId.OffsetValue;
+    kernelAddress = ProcessObject + g_kdctx.Data->PsUniqueProcessId.OffsetValue;
 
     if (!kdReadSystemMemory(kernelAddress, &processId, sizeof(processId)))
         return FALSE;
@@ -2409,10 +2422,10 @@ BOOL ObGetProcessImageFileName(
     ULONG_PTR kernelAddress;
     CHAR szImageFileName[16];
 
-    if (g_kdctx.PsProcessImageName.Valid == FALSE)
+    if (g_kdctx.Data->PsProcessImageName.Valid == FALSE)
         return FALSE;
 
-    kernelAddress = ProcessObject + g_kdctx.PsProcessImageName.OffsetValue;
+    kernelAddress = ProcessObject + g_kdctx.Data->PsProcessImageName.OffsetValue;
 
     szImageFileName[0] = 0;
 
@@ -2869,14 +2882,14 @@ BOOL ObCollectionCreateInternal(
         }
         else {
 
-            if (g_kdctx.PrivateNamespaceLookupTable == NULL)
-                g_kdctx.PrivateNamespaceLookupTable = ObFindPrivateNamespaceLookupTable(&g_kdctx);
+            if (g_kdctx.Data->PrivateNamespaceLookupTable == NULL)
+                g_kdctx.Data->PrivateNamespaceLookupTable = ObFindPrivateNamespaceLookupTable(&g_kdctx);
 
-            if (g_kdctx.PrivateNamespaceLookupTable != NULL) {
+            if (g_kdctx.Data->PrivateNamespaceLookupTable != NULL) {
 
                 bResult = ObpWalkPrivateNamespaceTable(&Collection->ListHead,
                     Collection->Heap,
-                    (ULONG_PTR)g_kdctx.PrivateNamespaceLookupTable);
+                    (ULONG_PTR)g_kdctx.Data->PrivateNamespaceLookupTable);
 
             }
             else {
@@ -3113,12 +3126,12 @@ BOOLEAN kdConnectDriver(
 
         if (NT_SUCCESS(status)) {
             g_kdctx.DeviceHandle = deviceHandle;
-            g_kdctx.DriverOpenStatus = status;
+            g_kdctx.DriverConnectStatus = status;
             return TRUE;
         }
         else {
             supEnablePrivilege(SE_DEBUG_PRIVILEGE, FALSE);
-            g_kdctx.DriverOpenStatus = status;
+            g_kdctx.DriverConnectStatus = status;
         }
     }
 
@@ -3647,6 +3660,8 @@ BOOLEAN kdQueryMmUnloadedDrivers(
     LONG                relativeValue = 0;
     hde64s              hs;
 
+    PKLDBG_SYSTEM_ADDRESS kdpMmUnloadedDrivers = &Context->Data->MmUnloadedDrivers;
+
 
     *UnloadedDrivers = NULL;
 
@@ -3662,99 +3677,112 @@ BOOLEAN kdQueryMmUnloadedDrivers(
         if (pwStaticBuffer == NULL)
             break;
 
-        //
-        // Locate PAGE image section.
-        //
-        SectionBase = supLookupImageSectionByName(PAGE_SECTION,
-            PAGE_SECTION_LEGNTH,
-            (PVOID)hNtOs,
-            &SectionSize);
+        if (kdpMmUnloadedDrivers->Valid == FALSE) {
 
-        if ((SectionBase == 0) || (SectionSize == 0))
-            break;
+            //
+            // Locate PAGE image section.
+            //
+            SectionBase = supLookupImageSectionByName(PAGE_SECTION,
+                PAGE_SECTION_LEGNTH,
+                (PVOID)hNtOs,
+                &SectionSize);
 
-        if (g_NtBuildNumber == NT_WIN10_THRESHOLD1)
-            MiRememberUnloadedDriverPattern[0] = FIX_WIN10_THRESHOULD_REG;
-        else if (g_NtBuildNumber > NT_WIN10_20H1)
-            MiRememberUnloadedDriverPattern[0] = FIX_WIN10_20H1_REG;
-
-        ptrCode = (PBYTE)supFindPattern((PBYTE)SectionBase,
-            SectionSize,
-            MiRememberUnloadedDriverPattern,
-            sizeof(MiRememberUnloadedDriverPattern));
-
-        if (ptrCode == NULL)
-            break;
-
-        if (RtlPointerToOffset(SectionBase, ptrCode) + 32 > SectionSize)
-            break;
-
-        Index = 0;
-        tempOffset = 0;
-
-        do {
-
-            hde64_disasm(RtlOffsetToPointer(ptrCode, Index), &hs);
-            if (hs.flags & F_ERROR)
+            if ((SectionBase == 0) || (SectionSize == 0))
                 break;
 
-            instLength = hs.len;
+            if (g_NtBuildNumber == NT_WIN10_THRESHOLD1)
+                MiRememberUnloadedDriverPattern[0] = FIX_WIN10_THRESHOULD_REG;
+            else if (g_NtBuildNumber > NT_WIN10_20H1)
+                MiRememberUnloadedDriverPattern[0] = FIX_WIN10_20H1_REG;
 
-            //
-            // Call ExAlloc/MiAlloc
-            //
-            if (instLength == 5) {
+            ptrCode = (PBYTE)supFindPattern((PBYTE)SectionBase,
+                SectionSize,
+                MiRememberUnloadedDriverPattern,
+                sizeof(MiRememberUnloadedDriverPattern));
 
-                if (ptrCode[Index] == 0xE8) {
+            if (ptrCode == NULL)
+                break;
 
-                    //
-                    // Fetch next instruction
-                    //
-                    tempOffset = Index + instLength;
+            if (RtlPointerToOffset(SectionBase, ptrCode) + 32 > SectionSize)
+                break;
 
-                    hde64_disasm(RtlOffsetToPointer(ptrCode, tempOffset), &hs);
-                    if (hs.flags & F_ERROR)
-                        break;
+            Index = 0;
+            tempOffset = 0;
 
-                    //
-                    // Must be MOV
-                    //
-                    if (hs.len == 7) {
+            do {
 
-                        if (ptrCode[tempOffset] == 0x48) {
+                hde64_disasm(RtlOffsetToPointer(ptrCode, Index), &hs);
+                if (hs.flags & F_ERROR)
+                    break;
 
-                            Index = tempOffset;
-                            instLength = hs.len;
+                instLength = hs.len;
 
-                            relativeValue = *(PLONG)(ptrCode + tempOffset + (hs.len - 4));
+                //
+                // Call ExAlloc/MiAlloc
+                //
+                if (instLength == 5) {
+
+                    if (ptrCode[Index] == 0xE8) {
+
+                        //
+                        // Fetch next instruction
+                        //
+                        tempOffset = Index + instLength;
+
+                        hde64_disasm(RtlOffsetToPointer(ptrCode, tempOffset), &hs);
+                        if (hs.flags & F_ERROR)
                             break;
 
-                        }
+                        //
+                        // Must be MOV
+                        //
+                        if (hs.len == 7) {
 
+                            if (ptrCode[tempOffset] == 0x48) {
+
+                                Index = tempOffset;
+                                instLength = hs.len;
+
+                                relativeValue = *(PLONG)(ptrCode + tempOffset + (hs.len - 4));
+                                break;
+
+                            }
+
+                        }
                     }
+
                 }
 
-            }
+                Index += instLength;
 
-            Index += instLength;
+            } while (Index < 32);
 
-        } while (Index < 32);
+            if ((relativeValue == 0) || (instLength == 0))
+                break;
 
-        if ((relativeValue == 0) || (instLength == 0))
-            break;
+            //
+            // Resolve MmUnloadedDrivers.
+            //
+            kernelAddress = kdAdjustAddressToNtOsBase((ULONG_PTR)ptrCode, Index, instLength, relativeValue);
+            if (!kdAddressInNtOsImage((PVOID)kernelAddress))
+                break;
 
-        //
-        // Resolve MmUnloadedDrivers.
-        //
-        kernelAddress = kdAdjustAddressToNtOsBase((ULONG_PTR)ptrCode, Index, instLength, relativeValue);
-        if (!kdAddressInNtOsImage((PVOID)kernelAddress))
-            break;
+            //
+            // Read ptr value.
+            //
+            if (!kdReadSystemMemoryEx(kernelAddress, &kernelAddress, sizeof(ULONG_PTR), &bytesRead))
+                break;
 
-        //
-        // Read ptr value.
-        //
-        if (!kdReadSystemMemoryEx(kernelAddress, &kernelAddress, sizeof(ULONG_PTR), &bytesRead))
-            break;
+            //
+            // Store resolved array address in the private data context.
+            //
+            kdpMmUnloadedDrivers->Address = kernelAddress;
+            kdpMmUnloadedDrivers->Valid = TRUE;
+        
+        }
+        else {
+            kernelAddress = kdpMmUnloadedDrivers->Address;
+        }
 
         //
         // Dump array to user mode.
@@ -3826,6 +3854,38 @@ BOOLEAN kdQueryMmUnloadedDrivers(
 }
 
 /*
+* kdDestroyShimmedDriversList
+*
+* Purpose:
+*
+* Remove all items from shimmed drivers list and free memory.
+*
+*/
+VOID kdDestroyShimmedDriversList(
+    _In_ PKSE_ENGINE_DUMP KseEngineDump
+)
+{
+    PLIST_ENTRY ListHead, Entry, NextEntry;
+    KSE_SHIMMED_DRIVER* Item;
+
+    ListHead = &KseEngineDump->ShimmedDriversDumpListHead;
+
+    ASSERT_LIST_ENTRY_VALID(ListHead);
+
+    if (IsListEmpty(ListHead))
+        return;
+
+    for (Entry = ListHead->Flink, NextEntry = Entry->Flink;
+        Entry != ListHead;
+        Entry = NextEntry, NextEntry = Entry->Flink)
+    {
+        Item = CONTAINING_RECORD(Entry, KSE_SHIMMED_DRIVER, ListEntry);
+        RemoveEntryList(Entry);
+        supHeapFree(Item);
+    }
+}
+
+/*
 * kdQueryKernelShims
 *
 * Purpose:
@@ -3850,12 +3910,14 @@ BOOLEAN kdQueryKernelShims(
     LIST_ENTRY ListEntry;
     KSE_SHIMMED_DRIVER* ShimmedDriver;
 
+    PKSE_ENGINE_DUMP pKseEngineDump = &Context->Data->KseEngineDump;
+
     if (!kdConnectDriver())
         return FALSE;
 
     __try {
 
-        if (Context->KseEngineDump.Valid == FALSE) {
+        if (pKseEngineDump->Valid == FALSE) {
             NtOsBase = (ULONG_PTR)Context->NtOsBase;
             hNtOs = (HMODULE)Context->NtOsImageMap;
 
@@ -3884,15 +3946,15 @@ BOOLEAN kdQueryKernelShims(
                 return FALSE;
             }
 
-            Context->KseEngineDump.KseAddress = Address;
+            pKseEngineDump->KseAddress = Address;
         }
 
         if (RefreshList) {
-            supDestroyShimmedDriversList(&Context->KseEngineDump.ShimmedDriversDumpListHead);
-            InitializeListHead(&Context->KseEngineDump.ShimmedDriversDumpListHead);
+            kdDestroyShimmedDriversList(pKseEngineDump);
+            InitializeListHead(&pKseEngineDump->ShimmedDriversDumpListHead);
         }
 
-        KseShimmedDriversListHead = Context->KseEngineDump.KseAddress + FIELD_OFFSET(KSE_ENGINE, ShimmedDriversListHead);
+        KseShimmedDriversListHead = pKseEngineDump->KseAddress + FIELD_OFFSET(KSE_ENGINE, ShimmedDriversListHead);
         KseEngineDumpValid = TRUE;   
 
         ListEntry.Blink = ListEntry.Flink = NULL;
@@ -3922,7 +3984,7 @@ BOOLEAN kdQueryKernelShims(
                 }
 
                 ListEntry.Flink = ShimmedDriver->ListEntry.Flink;
-                InsertHeadList(&Context->KseEngineDump.ShimmedDriversDumpListHead, &ShimmedDriver->ListEntry);
+                InsertHeadList(&pKseEngineDump->ShimmedDriversDumpListHead, &ShimmedDriver->ListEntry);
             }
         }
         else {
@@ -3930,7 +3992,7 @@ BOOLEAN kdQueryKernelShims(
             KseEngineDumpValid = FALSE;
         }
 
-        Context->KseEngineDump.Valid = KseEngineDumpValid;
+        pKseEngineDump->Valid = KseEngineDumpValid;
 
     }
     __except (WOBJ_EXCEPTION_FILTER_LOG) {
@@ -3991,7 +4053,7 @@ BOOL kdOpenLoadDriverPublic(
 *
 * Purpose:
 *
-* Enable Debug Privilege and open/load KLDBGDRV driver
+* Fire up KLDBG namespace and open/load helper driver
 *
 */
 VOID kdInit(
@@ -4002,9 +4064,12 @@ VOID kdInit(
     WCHAR szBuffer[MAX_PATH * 2];
 
     RtlSecureZeroMemory(&g_kdctx, sizeof(g_kdctx));
+    RtlSecureZeroMemory(&g_kdpdata, sizeof(g_kdpdata));
     RtlSecureZeroMemory(&g_SystemCallbacks, sizeof(g_SystemCallbacks));
 
     g_kdctx.IsFullAdmin = IsFullAdmin;
+
+    g_kdctx.Data = &g_kdpdata;
 
     NtpLdrExceptionFilter = (PFNNTLDR_EXCEPT_FILTER)exceptFilterWithLog;
 
@@ -4013,7 +4078,7 @@ VOID kdInit(
     //
     g_kdctx.DriverOpenLoadStatus = ERROR_NOT_CAPABLE;
 
-    InitializeListHead(&g_kdctx.KseEngineDump.ShimmedDriversDumpListHead);
+    InitializeListHead(&g_kdctx.Data->KseEngineDump.ShimmedDriversDumpListHead);
     InitializeListHead(&g_kdctx.ObCollection.ListHead);
     RtlInitializeCriticalSection(&g_kdctx.ObCollectionLock);
 

@@ -343,6 +343,29 @@ VOID AddParameterValueUlong(
 }
 
 /*
+* AddParameterValueBool
+*
+* Purpose:
+*
+* Add text to the multiline richedit tabbed control (bool value).
+*
+*/
+VOID AddParameterValueBool(
+    _In_ HWND OutputWindow,
+    _In_ LPWSTR Parameter,
+    _In_ BOOL Value)
+{
+    LPWSTR lpValue;
+
+    if (Value == FALSE)
+        lpValue = TEXT("FALSE");
+    else
+        lpValue = TEXT("TRUE");
+
+    AddParameterValue(OutputWindow, Parameter, lpValue);
+}
+
+/*
 * AboutDialogCollectGlobals
 *
 * Purpose:
@@ -500,55 +523,46 @@ VOID AboutDialogCollectGlobals(
     if (g_kdctx.DriverOpenLoadStatus == STATUS_SUCCESS) {
         _strcat(szBuffer, TEXT(" (reported as OK)"));
     }
+
     AddParameterValue(hwndOutput, TEXT("DriverOpenLoadStatus"), szBuffer);
-    
-    AddParameterValue32Hex(hwndOutput, TEXT("DriverOpenStatus"), g_kdctx.DriverOpenStatus);
-
-    AddParameterValueUlong(hwndOutput, TEXT("IsSecureBoot"), g_kdctx.IsSecureBoot);
-
-    AddParameterValueUlong(hwndOutput, TEXT("IsFullAdmin"), g_kdctx.IsFullAdmin);
-
-    AddParameterValueUlong(hwndOutput, TEXT("IsOurLoad"), g_kdctx.IsOurLoad);
-
-    AddParameterValue64Hex(hwndOutput, TEXT("DirectoryRootAddress"), g_kdctx.DirectoryRootAddress);
-
-    AddParameterValueUlong(hwndOutput, TEXT("DirectoryTypeIndex"), g_kdctx.DirectoryTypeIndex);
-
+    AddParameterValueUlong(hwndOutput, TEXT("DriverConnectStatus"), g_kdctx.DriverConnectStatus); //kdConnectDriver status
     AddParameterValue64Hex(hwndOutput, TEXT("KLDBG DeviceHandle"), (ULONG_PTR)g_kdctx.DeviceHandle);
 
-    AddParameterValue64Hex(hwndOutput, TEXT("IopInvalidDeviceRequest"), (ULONG_PTR)g_kdctx.IopInvalidDeviceRequest);
+    AddParameterValueBool(hwndOutput, TEXT("IsFullAdmin"), g_kdctx.IsFullAdmin); //admin privileges available
+    AddParameterValueBool(hwndOutput, TEXT("IsSecureBoot"), g_kdctx.IsSecureBoot); //secure boot enabled
+    AddParameterValueBool(hwndOutput, TEXT("IsOurLoad"), g_kdctx.IsOurLoad); //driver was loaded by our program instance
 
-    AddParameterValueUlong(hwndOutput, TEXT("KiServiceLimit"), g_kdctx.KeServiceDescriptorTable.Limit);
-
-    AddParameterValue64Hex(hwndOutput, TEXT("KiServiceTableAddress"), (ULONG_PTR)g_kdctx.KeServiceDescriptorTable.Base);
+    AddParameterValue64Hex(hwndOutput, TEXT("DirectoryRootAddress"), g_kdctx.DirectoryRootAddress); //address of object root directory
+    AddParameterValueUlong(hwndOutput, TEXT("DirectoryTypeIndex"), g_kdctx.DirectoryTypeIndex);
 
     AddParameterValue64Hex(hwndOutput, TEXT("NtOsBase"), (ULONG_PTR)g_kdctx.NtOsBase);
-
-    AddParameterValueUlong(hwndOutput, TEXT("NtOsSize"), g_kdctx.NtOsSize);
-
-    AddParameterValue64Hex(hwndOutput, TEXT("NtOsImageMap"), (ULONG_PTR)g_kdctx.NtOsImageMap);
-
-    AddParameterValueUlong(hwndOutput, TEXT("ObHeaderCookie"), g_kdctx.ObHeaderCookie.Value);
+    AddParameterValue64Hex(hwndOutput, TEXT("NtOsImageMap"), (ULONG_PTR)g_kdctx.NtOsImageMap);//mapped image address
+    AddParameterValue32Hex(hwndOutput, TEXT("NtOsSize"), g_kdctx.NtOsSize);//mapped image size
 
     AddParameterValueUlong(hwndOutput, TEXT("ObHeaderCookieValid"), g_kdctx.ObHeaderCookie.Valid);
-
-    AddParameterValue64Hex(hwndOutput, TEXT("PrivateNamespaceLookupTable"), (ULONG_PTR)g_kdctx.PrivateNamespaceLookupTable);
+    AddParameterValue32Hex(hwndOutput, TEXT("ObHeaderCookie"), g_kdctx.ObHeaderCookie.Value);
 
     AddParameterValue64Hex(hwndOutput, TEXT("SystemRangeStart"), (ULONG_PTR)g_kdctx.SystemRangeStart);
-
     AddParameterValue64Hex(hwndOutput, TEXT("MinimumUserModeAddress"), (ULONG_PTR)g_kdctx.MinimumUserModeAddress);
-
     AddParameterValue64Hex(hwndOutput, TEXT("MaximumUserModeAddress"), (ULONG_PTR)g_kdctx.MaximumUserModeAddress);
+
+    //
+    // List kldbg data.
+    //
+    AddParameterValueUlong(hwndOutput, TEXT("KiServiceLimit"), g_kdctx.Data->KeServiceDescriptorTable.Limit);
+    AddParameterValue64Hex(hwndOutput, TEXT("KiServiceTableAddress"), (ULONG_PTR)g_kdctx.Data->KeServiceDescriptorTable.Base);
+    AddParameterValue64Hex(hwndOutput, TEXT("IopInvalidDeviceRequest"), (ULONG_PTR)g_kdctx.Data->IopInvalidDeviceRequest);
+    AddParameterValue64Hex(hwndOutput, TEXT("PrivateNamespaceLookupTable"), (ULONG_PTR)g_kdctx.Data->PrivateNamespaceLookupTable);
 
     //
     // List g_WinObj (UI specific).
     //
-    AddParameterValueUlong(hwndOutput, TEXT("IsWine"), g_WinObj.IsWine);
+    AddParameterValueBool(hwndOutput, TEXT("IsWine"), g_WinObj.IsWine);
 
     //
     // For MMIO usage.
     //
-    AddParameterValueUlong(hwndOutput, TEXT("EnableFullMitigations"), g_WinObj.EnableFullMitigations);
+    AddParameterValueBool(hwndOutput, TEXT("EnableFullMitigations"), g_WinObj.EnableFullMitigations);
 
     //
     // List other data.
@@ -556,6 +570,7 @@ VOID AboutDialogCollectGlobals(
     if (NT_SUCCESS(supCICustomKernelSignersAllowed(&bCustomSignersAllowed))) {
         AddParameterValueUlong(hwndOutput, TEXT("CICustomKernelSignersAllowed"), (ULONG)bCustomSignersAllowed);
     }
+
     AddParameterValueUlong(hwndOutput, TEXT("DPI Value"), (ULONG)supGetDPIValue(NULL));
 
     CodeIntegrity.Length = sizeof(CodeIntegrity);

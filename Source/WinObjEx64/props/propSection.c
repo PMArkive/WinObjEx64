@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        12 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -51,6 +51,39 @@ typedef HTREEITEM(CALLBACK* POUTPUT_SECTION_CREATE_NODE)(
     _In_opt_ LPWSTR FirstValue,
     _In_opt_ LPWSTR SecondValue);
 
+//
+// MMSECTION_FLAGS (as of Win10)
+//
+LPCWSTR T_SectionFlags[] = {
+    L"BeingDeleted",
+    L"BeingCreated",
+    L"BeingPurged",
+    L"NoModifiedWriting",
+    L"FailAllIo",
+    L"Image",
+    L"Based",
+    L"File",
+    L"AttemptingDelete",
+    L"PrefetchCreated",
+    L"PhysicalMemory",
+    L"ImageControlAreaOnRemovableMedia",
+    L"Reserve",
+    L"Commit",
+    L"NoChange",
+    L"WasPurged",
+    L"UserReference",
+    L"GlobalMemory",
+    L"DeleteOnClose",
+    L"FilePointerNull",
+    L"PreferredNode",
+    L"GlobalOnlyPerSession",
+    L"UserWritable",
+    L"SystemVaAllocated",
+    L"PreferredFsCompressionBoundary",
+    L"UsingFileExtents",
+    L"PageSize64K"
+};
+
 BOOLEAN IsValidSegment(
     _In_ ULONG_PTR ControlAreaAddress,
     _In_ PSEGMENT Segment
@@ -74,8 +107,9 @@ VOID CALLBACK SectionControlAreaOutput(
     _In_ PCONTROL_AREA_COMPAT ControlArea
 )
 {
-    HTREEITEM treeItem;
+    HTREEITEM treeItem, treeSubItem;
     PVOID fileObject;
+    UINT i, j;
 
     treeItem = propObDumpAddress(TreeList,
         RootItem,
@@ -130,7 +164,7 @@ VOID CALLBACK SectionControlAreaOutput(
             TRUE,
             0, 0);
 
-        propObDumpUlong(TreeList,
+        treeSubItem = propObDumpUlong(TreeList,
             treeItem,
             TEXT("u.LongFlags"),
             NULL,
@@ -139,6 +173,51 @@ VOID CALLBACK SectionControlAreaOutput(
             FALSE,
             0, 0);
 
+        if (treeSubItem) {
+
+            i = 0;
+            j = 0;
+            do {
+
+                if (i == 20) {
+
+                    //
+                    // This flag is 6 bits.
+                    //
+                    propObDumpUlong(TreeList,
+                        treeSubItem,
+                        (LPWSTR)T_SectionFlags[20],
+                        NULL,
+                        (ULONG)ControlArea->u.Flags.PreferredNode,
+                        TRUE,
+                        FALSE,
+                        0, 0);
+
+                    i += 6;
+
+                }
+                else {
+
+                    propObDumpByte(TreeList,
+                        treeSubItem,
+                        (LPWSTR)T_SectionFlags[j],
+                        NULL,
+                        GET_BIT(ControlArea->u.LongFlags, i),
+                        0, 0,
+                        FALSE);
+
+                    i += 1;
+                }
+
+                j++;
+
+            } while (i < 32);
+
+        }
+
+        //
+        // These flags are way too variadic even between Win10 releases.
+        //
         propObDumpUlong(TreeList,
             treeItem,
             TEXT("u1.LongFlags"),
@@ -410,8 +489,9 @@ HTREEITEM CALLBACK SectionObjectCreateNode(
 
     RtlSecureZeroMemory(&subitems, sizeof(subitems));
 
-    if (FirstValue) {
-        subitems.Count = 1;
+    subitems.Count = 2;
+
+    if (FirstValue) {       
         subitems.Text[0] = FirstValue;
     }
     else {
@@ -419,7 +499,6 @@ HTREEITEM CALLBACK SectionObjectCreateNode(
     }
 
     if (SecondValue) {
-        subitems.Count += 1;
         subitems.Text[1] = SecondValue;
     }
     else {
@@ -438,7 +517,6 @@ HTREEITEM CALLBACK SectionObjectCreateNode(
 #define SECTION_ENUM_MEMORY_READ_FAILURE    1
 #define SECTION_ENUM_CORRUPT_SEGMENT        2
 #define SECTION_ENUM_UNSUPPORTED_FLAGS      3
-
 
 /*
 * SectionObjectEnumerateFields
@@ -467,7 +545,6 @@ ULONG SectionObjectEnumerateFields(
     SEGMENT dumpedSegment;
     CONTROL_AREA_COMPAT dumpedControlArea;
     MI_REVERSE_VIEW_MAP dumpedViewMap;
-    //MI_SECTION_IMAGE_INFORMATION dumpedMiSectionImageInfo;
     //MMVAD dumpedVad;
     LIST_ENTRY viewLinks;
 
@@ -521,19 +598,6 @@ ULONG SectionObjectEnumerateFields(
             ulResult = SECTION_ENUM_CORRUPT_SEGMENT;
             break;
         }
-
-       /* if (dumpedControlArea.u.Flags.Image) {
-
-            RtlSecureZeroMemory(&dumpedMiSectionImageInfo, sizeof(dumpedMiSectionImageInfo));
-
-            if (kdReadSystemMemory((ULONG_PTR)dumpedSegment.u3.ImageInformation,
-                &dumpedMiSectionImageInfo,
-                sizeof(dumpedMiSectionImageInfo)))
-            {
-                dumpedSegment.u3.ImageInformation = &dumpedMiSectionImageInfo;
-            }
-
-        }*/
 
         numberOfMappedViews = dumpedControlArea.NumberOfMappedViews;
 

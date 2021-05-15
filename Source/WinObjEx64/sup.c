@@ -6744,14 +6744,17 @@ BOOLEAN supIsFileImageSection(
 *
 */
 BOOLEAN supIsDriverShimmed(
+    _In_ PKSE_ENGINE_DUMP KseEngineDump,
     _In_ PVOID DriverBaseAddress)
 {
-    PLIST_ENTRY Entry, NextEntry, ListHead = &g_kdctx.KseEngineDump.ShimmedDriversDumpListHead;
+    PLIST_ENTRY Entry, NextEntry, ListHead;
     KSE_SHIMMED_DRIVER* ShimmedDriver;
 
 
-    if (g_kdctx.KseEngineDump.Valid == FALSE)
+    if (KseEngineDump->Valid == FALSE)
         return FALSE;
+
+    ListHead = &KseEngineDump->ShimmedDriversDumpListHead;
 
     ASSERT_LIST_ENTRY_VALID_BOOLEAN(ListHead);
 
@@ -6768,35 +6771,6 @@ BOOLEAN supIsDriverShimmed(
     }
 
     return FALSE;
-}
-
-/*
-* supDestroyShimmedDriversList
-*
-* Purpose:
-*
-* Remove all items from shimmed drivers list and free memory.
-*
-*/
-VOID supDestroyShimmedDriversList(
-    _In_ PLIST_ENTRY ListHead)
-{
-    PLIST_ENTRY Entry, NextEntry;
-    KSE_SHIMMED_DRIVER* Item;
-
-    ASSERT_LIST_ENTRY_VALID(ListHead);
-
-    if (IsListEmpty(ListHead))
-        return;
-
-    for (Entry = ListHead->Flink, NextEntry = Entry->Flink;
-        Entry != ListHead;
-        Entry = NextEntry, NextEntry = Entry->Flink)
-    {
-        Item = CONTAINING_RECORD(Entry, KSE_SHIMMED_DRIVER, ListEntry);
-        RemoveEntryList(Entry);
-        supHeapFree(Item);
-    }
 }
 
 size_t supxEscStrlen(wchar_t* s)

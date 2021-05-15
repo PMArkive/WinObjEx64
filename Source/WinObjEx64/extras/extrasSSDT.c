@@ -521,13 +521,13 @@ BOOL SdtListCreateTable(
 
     __try {
 
-        if ((g_kdctx.KeServiceDescriptorTable.Base == 0) ||
-            (g_kdctx.KeServiceDescriptorTable.Limit == 0))
+        if ((g_kdctx.Data->KeServiceDescriptorTable.Base == 0) ||
+            (g_kdctx.Data->KeServiceDescriptorTable.Limit == 0))
         {
             if (!kdFindKiServiceTable(
                 (ULONG_PTR)g_kdctx.NtOsImageMap,
                 (ULONG_PTR)g_kdctx.NtOsBase,
-                &g_kdctx.KeServiceDescriptorTable))
+                &g_kdctx.Data->KeServiceDescriptorTable))
             {
                 __leave;
             }
@@ -566,8 +566,8 @@ BOOL SdtListCreateTable(
             KiServiceTable.Allocated = TRUE;
 
             if (!supDumpSyscallTableConverted(
-                g_kdctx.KeServiceDescriptorTable.Base,
-                g_kdctx.KeServiceDescriptorTable.Limit,
+                g_kdctx.Data->KeServiceDescriptorTable.Base,
+                g_kdctx.Data->KeServiceDescriptorTable.Limit,
                 &TableDump))
             {
                 supHeapFree(KiServiceTable.Table);
@@ -575,7 +575,7 @@ BOOL SdtListCreateTable(
                 __leave;
             }
 
-            KiServiceTable.Base = g_kdctx.KeServiceDescriptorTable.Base;
+            KiServiceTable.Base = g_kdctx.Data->KeServiceDescriptorTable.Base;
 
             //
             // Walk for syscall stubs.
@@ -608,7 +608,7 @@ BOOL SdtListCreateTable(
 
                     if (*(UCHAR*)((UCHAR*)FunctionAddress + 3) == 0xB8) {
                         ServiceId = *(ULONG*)((UCHAR*)FunctionAddress + 4);
-                        if (ServiceId < g_kdctx.KeServiceDescriptorTable.Limit) {
+                        if (ServiceId < g_kdctx.Data->KeServiceDescriptorTable.Limit) {
                             ServiceEntry->ServiceId = ServiceId;
                             ServiceEntry->Address = TableDump[ServiceId];
                             TableDump[ServiceId] = 0;
@@ -631,7 +631,7 @@ BOOL SdtListCreateTable(
             for (i = 0; i < KiServiceTable.Limit; i++) {
                 ServiceEntry = &KiServiceTable.Table[i];
                 if (ServiceEntry->ServiceId == INVALID_SERVICE_ENTRY_ID) {
-                    for (j = 0; j < g_kdctx.KeServiceDescriptorTable.Limit; j++) {
+                    for (j = 0; j < g_kdctx.Data->KeServiceDescriptorTable.Limit; j++) {
                         if (TableDump[j] != 0) {
                             ServiceEntry->ServiceId = j;
                             ServiceEntry->Address = TableDump[j];

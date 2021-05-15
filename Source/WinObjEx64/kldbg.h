@@ -66,13 +66,13 @@ typedef struct _OBJECT_COLLECTION {
 } OBJECT_COLLECTION, *POBJECT_COLLECTION;
 
 typedef struct _OBHEADER_COOKIE {
-    UCHAR Value;
     BOOLEAN Valid;
+    UCHAR Value;
 } OBHEADER_COOKIE, * POBHEADER_COOKIE;
 
 typedef struct _EPROCESS_OFFSET {
-    ULONG OffsetValue;
     BOOLEAN Valid;
+    ULONG OffsetValue;
 } EPROCESS_OFFSET, * PEPROCESS_OFFSET;
 
 typedef struct _KSE_ENGINE_DUMP {
@@ -80,6 +80,38 @@ typedef struct _KSE_ENGINE_DUMP {
     ULONG_PTR KseAddress;
     LIST_ENTRY ShimmedDriversDumpListHead;
 } KSE_ENGINE_DUMP, * PKSE_ENGINE_DUMP;
+
+typedef struct _KLDBG_SYSTEM_ADDRESS {
+    BOOLEAN Valid;
+    ULONG_PTR Address;
+} KLDBG_SYSTEM_ADDRESS, * PKLDBG_SYSTEM_ADDRESS;
+
+//
+// KLDBG private data.
+//
+typedef struct _KLDBGPDATA {
+
+    //address of invalid request handler
+    PVOID IopInvalidDeviceRequest;
+
+    //address of ObpPrivateNamespaceLookupTable
+    PVOID PrivateNamespaceLookupTable;
+
+    //syscall tables related info
+    ULONG_PTR KeServiceDescriptorTableShadowPtr;
+    KSERVICE_TABLE_DESCRIPTOR KeServiceDescriptorTable;
+
+    //kernel shim engine dump and auxl ptrs
+    KSE_ENGINE_DUMP KseEngineDump;
+
+    //unloaded drivers array address
+    KLDBG_SYSTEM_ADDRESS MmUnloadedDrivers; 
+
+    //EPROCESS specific offsets
+    EPROCESS_OFFSET PsUniqueProcessId;  
+    EPROCESS_OFFSET PsProcessImageName; 
+
+} KLDBGPDATA, * PKLDBGPDATA;
 
 typedef struct _KLDBGCONTEXT {
 
@@ -95,22 +127,12 @@ typedef struct _KLDBGCONTEXT {
     //system object header cookie (win10+)
     OBHEADER_COOKIE ObHeaderCookie;
 
-    //EPROCESS offsets
-    EPROCESS_OFFSET PsUniqueProcessId;
-    EPROCESS_OFFSET PsProcessImageName;
-
     //index of directory type and root address
     USHORT DirectoryTypeIndex;
     ULONG_PTR DirectoryRootAddress;
 
     //kldbgdrv device handle
     HANDLE DeviceHandle;
-
-    //address of invalid request handler
-    PVOID IopInvalidDeviceRequest;
-
-    //address of ObpPrivateNamespaceLookupTable
-    PVOID PrivateNamespaceLookupTable;
 
     //ntoskrnl base and size
     PVOID NtOsBase;
@@ -121,11 +143,7 @@ typedef struct _KLDBGCONTEXT {
 
     //driver loading/open status
     ULONG DriverOpenLoadStatus;
-    ULONG DriverOpenStatus;
-
-    //syscall tables related info
-    ULONG_PTR KeServiceDescriptorTableShadowPtr;
-    KSERVICE_TABLE_DESCRIPTOR KeServiceDescriptorTable;
+    ULONG DriverConnectStatus;
 
     //system range start
     ULONG_PTR SystemRangeStart;
@@ -140,8 +158,7 @@ typedef struct _KLDBGCONTEXT {
     //object list lock
     CRITICAL_SECTION ObCollectionLock;
 
-    //kernel shim engine dump and auxl ptrs
-    KSE_ENGINE_DUMP KseEngineDump;
+    PKLDBGPDATA Data;
 
 } KLDBGCONTEXT, *PKLDBGCONTEXT;
 
@@ -459,6 +476,9 @@ VOID kdReportReadError(
 UCHAR kdGetInstructionLength(
     _In_ PVOID ptrCode,
     _Out_ PULONG ptrFlags);
+
+VOID kdDestroyShimmedDriversList(
+    _In_ PKSE_ENGINE_DUMP KseEngineDump);
 
 BOOLEAN kdQueryKernelShims(
     _In_ PKLDBGCONTEXT Context,

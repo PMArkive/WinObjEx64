@@ -24,7 +24,7 @@ INT_PTR CALLBACK ObjectDumpDialogProc(
     _In_  WPARAM wParam,
     _In_  LPARAM lParam);
 
-VOID propObDumpUlong(
+HTREEITEM propObDumpUlong(
     _In_ HWND TreeList,
     _In_ HTREEITEM hParent,
     _In_ LPWSTR lpszName,

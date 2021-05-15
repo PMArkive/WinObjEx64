@@ -582,7 +582,10 @@ VOID DrvListDrivers(
 
             szBuffer[0] = 0;
 
-            if (supIsDriverShimmed(pModule->ImageBase)) {
+            if (supIsDriverShimmed(
+                &g_kdctx.Data->KseEngineDump,
+                pModule->ImageBase)) 
+            {
                 _strcpy(szBuffer, TEXT("Yes"));
             }
 
@@ -836,8 +839,12 @@ INT_PTR CALLBACK DriversDialogProc(
                 g_WinObj.AuxDialogs[dlgIndex] = NULL;
             }
 
+            if (pDlgContext->DialogMode == DDM_Normal) {
+                kdDestroyShimmedDriversList(&g_kdctx.Data->KseEngineDump);
+            }
+
             RtlSecureZeroMemory(pDlgContext, sizeof(EXTRASCONTEXT));
-            supDestroyShimmedDriversList(&g_kdctx.KseEngineDump.ShimmedDriversDumpListHead);
+
         }
         return DestroyWindow(hwndDlg);
 
