@@ -980,36 +980,34 @@ NTSTATUS ObEnumerateBoundaryDescriptorEntries(
 * Use supVirtualFree to free returned buffer.
 *
 */
-_Success_(return != NULL)
 PVOID ObpDumpObjectWithSpecifiedSize(
     _In_ ULONG_PTR ObjectAddress,
     _In_ ULONG ObjectSize,
     _In_ ULONG ObjectVersion,
-    _Out_ PULONG ReadSize,
-    _Out_ PULONG ReadVersion
+    _Out_ PULONG OutSize,
+    _Out_ PULONG OutVersion
 )
 {
     PVOID ObjectBuffer = NULL;
     ULONG BufferSize = ALIGN_UP_BY(ObjectSize, PAGE_SIZE);
 
+    *OutSize = 0;
+    *OutVersion = 0;
+
     ObjectBuffer = supVirtualAlloc(BufferSize);
-    if (ObjectBuffer == NULL) {
-        return NULL;
+    if (ObjectBuffer) {
+        if (kdReadSystemMemory(ObjectAddress,
+            ObjectBuffer,
+            (ULONG)ObjectSize))
+        {
+            *OutSize = ObjectSize;
+            *OutVersion = ObjectVersion;
+        }
+        else {
+            supVirtualFree(ObjectBuffer);
+            ObjectBuffer = NULL;
+        }
     }
-
-    if (!kdReadSystemMemory(ObjectAddress,
-        ObjectBuffer,
-        (ULONG)ObjectSize))
-    {
-        supVirtualFree(ObjectBuffer);
-        return NULL;
-    }
-
-    if (ReadSize)
-        *ReadSize = ObjectSize;
-    if (ReadVersion)
-        *ReadVersion = ObjectVersion;
-
     return ObjectBuffer;
 }
 
@@ -1029,41 +1027,35 @@ PVOID ObDumpObjectTypeVersionAware(
     _Out_ PULONG Version
 )
 {
-    ULONG ObjectSize = 0;
-    ULONG ObjectVersion = 0;
-
-    //assume failure
-    if (Size) *Size = 0;
-    if (Version) *Version = 0;
-    if (ObjectAddress < g_kdctx.SystemRangeStart)
-        return NULL;
+    ULONG objectSize = 0;
+    ULONG objectVersion = 0;
 
     switch (g_NtBuildNumber) {
     case NT_WIN7_RTM:
     case NT_WIN7_SP1:
-        ObjectSize = sizeof(OBJECT_TYPE_7);
-        ObjectVersion = 1;
+        objectSize = sizeof(OBJECT_TYPE_7);
+        objectVersion = 1;
         break;
     case NT_WIN8_RTM:
     case NT_WIN8_BLUE:
     case NT_WIN10_THRESHOLD1:
     case NT_WIN10_THRESHOLD2:
-        ObjectSize = sizeof(OBJECT_TYPE_8);
-        ObjectVersion = 2;
+        objectSize = sizeof(OBJECT_TYPE_8);
+        objectVersion = 2;
         break;
     case NT_WIN10_REDSTONE1:
-        ObjectSize = sizeof(OBJECT_TYPE_RS1);
-        ObjectVersion = 3;
+        objectSize = sizeof(OBJECT_TYPE_RS1);
+        objectVersion = 3;
         break;
     default:
-        ObjectSize = sizeof(OBJECT_TYPE_RS2);
-        ObjectVersion = 4;
+        objectSize = sizeof(OBJECT_TYPE_RS2);
+        objectVersion = 4;
         break;
     }
 
     return ObpDumpObjectWithSpecifiedSize(ObjectAddress,
-        ObjectSize,
-        ObjectVersion,
+        objectSize,
+        objectVersion,
         Size,
         Version);
 }
@@ -1084,38 +1076,32 @@ PVOID ObDumpAlpcPortObjectVersionAware(
     _Out_ PULONG Version
 )
 {
-    ULONG ObjectSize = 0;
-    ULONG ObjectVersion = 0;
-
-    //assume failure
-    if (Size) *Size = 0;
-    if (Version) *Version = 0;
-    if (ObjectAddress < g_kdctx.SystemRangeStart)
-        return NULL;
+    ULONG objectSize = 0;
+    ULONG objectVersion = 0;
 
     switch (g_NtBuildNumber) {
     case NT_WIN7_RTM:
     case NT_WIN7_SP1:
-        ObjectSize = sizeof(ALPC_PORT_7600);
-        ObjectVersion = 1;
+        objectSize = sizeof(ALPC_PORT_7600);
+        objectVersion = 1;
         break;
     case NT_WIN8_RTM:
-        ObjectSize = sizeof(ALPC_PORT_9200);
-        ObjectVersion = 2;
+        objectSize = sizeof(ALPC_PORT_9200);
+        objectVersion = 2;
         break;
     case NT_WIN8_BLUE:
-        ObjectSize = sizeof(ALPC_PORT_9600);
-        ObjectVersion = 3;
+        objectSize = sizeof(ALPC_PORT_9600);
+        objectVersion = 3;
         break;
     default:
-        ObjectSize = sizeof(ALPC_PORT_10240);
-        ObjectVersion = 4;
+        objectSize = sizeof(ALPC_PORT_10240);
+        objectVersion = 4;
         break;
     }
 
     return ObpDumpObjectWithSpecifiedSize(ObjectAddress,
-        ObjectSize,
-        ObjectVersion,
+        objectSize,
+        objectVersion,
         Size,
         Version);
 }
@@ -1136,14 +1122,8 @@ PVOID ObDumpDirectoryObjectVersionAware(
     _Out_ PULONG Version
 )
 {
-    ULONG ObjectVersion;
-    ULONG ObjectSize = 0;
-
-    //assume failure
-    if (Size) *Size = 0;
-    if (Version) *Version = 0;
-    if (ObjectAddress < g_kdctx.SystemRangeStart)
-        return NULL;
+    ULONG objectSize = 0;
+    ULONG objectVersion = 0;
 
     switch (g_NtBuildNumber) {
 
@@ -1151,26 +1131,26 @@ PVOID ObDumpDirectoryObjectVersionAware(
     case NT_WIN7_SP1:
     case NT_WIN8_RTM:
     case NT_WIN8_BLUE:
-        ObjectVersion = 1;
-        ObjectSize = sizeof(OBJECT_DIRECTORY);
+        objectSize = sizeof(OBJECT_DIRECTORY);
+        objectVersion = 1;
         break;
 
     case NT_WIN10_THRESHOLD1:
     case NT_WIN10_THRESHOLD2:
     case NT_WIN10_REDSTONE1:
-        ObjectVersion = 2;
-        ObjectSize = sizeof(OBJECT_DIRECTORY_V2);
+        objectSize = sizeof(OBJECT_DIRECTORY_V2);
+        objectVersion = 2;
         break;
 
     default:
-        ObjectVersion = 3;
-        ObjectSize = sizeof(OBJECT_DIRECTORY_V3);
+        objectSize = sizeof(OBJECT_DIRECTORY_V3);
+        objectVersion = 3;
         break;
     }
 
     return ObpDumpObjectWithSpecifiedSize(ObjectAddress,
-        ObjectSize,
-        ObjectVersion,
+        objectSize,
+        objectVersion,
         Size,
         Version);
 }
@@ -1191,31 +1171,25 @@ PVOID ObDumpSymbolicLinkObjectVersionAware(
     _Out_ PULONG Version
 )
 {
-    ULONG ObjectSize = 0;
-    ULONG ObjectVersion = 0;
-
-    //assume failure
-    if (Size) *Size = 0;
-    if (Version) *Version = 0;
-    if (ObjectAddress < g_kdctx.SystemRangeStart)
-        return NULL;
+    ULONG objectSize = 0;
+    ULONG objectVersion = 0;
 
     switch (g_NtBuildNumber) {
     case NT_WIN7_RTM:
     case NT_WIN7_SP1:
     case NT_WIN8_RTM:
     case NT_WIN8_BLUE:
-        ObjectSize = sizeof(OBJECT_SYMBOLIC_LINK_V1);
-        ObjectVersion = 1;
+        objectSize = sizeof(OBJECT_SYMBOLIC_LINK_V1);
+        objectVersion = 1;
         break;
     case NT_WIN10_THRESHOLD1:
     case NT_WIN10_THRESHOLD2:
-        ObjectSize = sizeof(OBJECT_SYMBOLIC_LINK_V2);
-        ObjectVersion = 2;
+        objectSize = sizeof(OBJECT_SYMBOLIC_LINK_V2);
+        objectVersion = 2;
         break;
     case NT_WIN10_REDSTONE1:
-        ObjectSize = sizeof(OBJECT_SYMBOLIC_LINK_V3);
-        ObjectVersion = 3;
+        objectSize = sizeof(OBJECT_SYMBOLIC_LINK_V3);
+        objectVersion = 3;
         break;
     case NT_WIN10_REDSTONE2:
     case NT_WIN10_REDSTONE3:
@@ -1225,18 +1199,18 @@ PVOID ObDumpSymbolicLinkObjectVersionAware(
     case NT_WIN10_19H2:
     case NT_WIN10_20H1:
     case NT_WIN10_20H2:
-        ObjectSize = sizeof(OBJECT_SYMBOLIC_LINK_V4);
-        ObjectVersion = 4;
+        objectSize = sizeof(OBJECT_SYMBOLIC_LINK_V4);
+        objectVersion = 4;
         break;
     default:
-        ObjectSize = sizeof(OBJECT_SYMBOLIC_LINK_V5);
-        ObjectVersion = 5;
+        objectSize = sizeof(OBJECT_SYMBOLIC_LINK_V5);
+        objectVersion = 5;
         break;
     }
 
     return ObpDumpObjectWithSpecifiedSize(ObjectAddress,
-        ObjectSize,
-        ObjectVersion,
+        objectSize,
+        objectVersion,
         Size,
         Version);
 }
@@ -1257,15 +1231,8 @@ PVOID ObDumpDeviceMapVersionAware(
     _Out_ PULONG Version
 )
 {
-    ULONG ObjectSize = 0;
-    ULONG ObjectVersion = 0;
-
-    //assume failure
-    if (Size) *Size = 0;
-    if (Version) *Version = 0;
-
-    if (ObjectAddress < g_kdctx.SystemRangeStart)
-        return NULL;
+    ULONG objectSize = 0;
+    ULONG objectVersion = 0;
 
     switch (g_NtBuildNumber) {
     case NT_WIN7_RTM:
@@ -1274,19 +1241,19 @@ PVOID ObDumpDeviceMapVersionAware(
     case NT_WIN8_BLUE:
     case NT_WIN10_THRESHOLD1:
     case NT_WIN10_THRESHOLD2:
-        ObjectSize = sizeof(DEVICE_MAP_V1);
-        ObjectVersion = 1;
+        objectSize = sizeof(DEVICE_MAP_V1);
+        objectVersion = 1;
         break;
     case NT_WIN10_REDSTONE1:
     default:
-        ObjectSize = sizeof(DEVICE_MAP_V2);
-        ObjectVersion = 2;
+        objectSize = sizeof(DEVICE_MAP_V2);
+        objectVersion = 2;
         break;
     }
 
     return ObpDumpObjectWithSpecifiedSize(ObjectAddress,
-        ObjectSize,
-        ObjectVersion,
+        objectSize,
+        objectVersion,
         Size,
         Version);
 }
@@ -1307,42 +1274,35 @@ PVOID ObDumpDriverExtensionVersionAware(
     _Out_ PULONG Version
 )
 {
-    ULONG ObjectSize = 0;
-    ULONG ObjectVersion = 0;
-
-    //assume failure
-    if (Size) *Size = 0;
-    if (Version) *Version = 0;
-
-    if (ObjectAddress < g_kdctx.SystemRangeStart)
-        return NULL;
+    ULONG objectSize = 0;
+    ULONG objectVersion = 0;
 
     if (g_NtBuildNumber >= NT_WIN8_BLUE) {
-        ObjectSize = sizeof(DRIVER_EXTENSION_V4);
-        ObjectVersion = 4;
+        objectSize = sizeof(DRIVER_EXTENSION_V4);
+        objectVersion = 4;
     }
     else {
 
         switch (g_NtBuildNumber) {
         case NT_WIN7_RTM:
         case NT_WIN7_SP1:
-            ObjectSize = sizeof(DRIVER_EXTENSION_V2);
-            ObjectVersion = 2;
+            objectSize = sizeof(DRIVER_EXTENSION_V2);
+            objectVersion = 2;
             break;
         case NT_WIN8_RTM:
-            ObjectSize = sizeof(DRIVER_EXTENSION_V3);
-            ObjectVersion = 3;
+            objectSize = sizeof(DRIVER_EXTENSION_V3);
+            objectVersion = 3;
             break;
         default:
-            ObjectSize = sizeof(DRIVER_EXTENSION);
-            ObjectVersion = 1;
+            objectSize = sizeof(DRIVER_EXTENSION);
+            objectVersion = 1;
             break;
         }
     }
 
     return ObpDumpObjectWithSpecifiedSize(ObjectAddress,
-        ObjectSize,
-        ObjectVersion,
+        objectSize,
+        objectVersion,
         Size,
         Version);
 }
@@ -1472,9 +1432,6 @@ BOOLEAN ObpFindProcessObjectOffsets(
     PEPROCESS_OFFSET pOffsetImageName = &Context->Data->PsProcessImageName;
 
     __try {
-
-        pOffsetProcessId->Valid = FALSE;
-        pOffsetImageName->Valid = FALSE;
 
         NtOsBase = (ULONG_PTR)Context->NtOsBase;
         hNtOs = (HMODULE)Context->NtOsImageMap;

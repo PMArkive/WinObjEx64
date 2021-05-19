@@ -5350,28 +5350,30 @@ LPWSTR supGetSidNameUse(
     _In_ SID_NAME_USE SidNameUse
 )
 {
-    switch (SidNameUse) {
-    case ExtSidTypeUser:
+    ULONG nameUse = (ULONG)SidNameUse;
+
+    switch (nameUse) {
+    case sidTypeUser:
         return L"User";
-    case ExtSidTypeGroup:
+    case sidTypeGroup:
         return L"Group";
-    case ExtSidTypeDomain:
+    case sidTypeDomain:
         return L"Domain";
-    case ExtSidTypeAlias:
+    case sidTypeAlias:
         return L"Alias";
-    case ExtSidTypeWellKnownGroup:
+    case sidTypeWellKnownGroup:
         return L"WellKnownGroup";
-    case ExtSidTypeDeletedAccount:
+    case sidTypeDeletedAccount:
         return L"DeletedAccount";
-    case ExtSidTypeInvalid:
+    case sidTypeInvalid:
         return L"Invalid";
-    case ExtSidTypeComputer:
+    case sidTypeComputer:
         return L"Computer";
-    case ExtSidTypeLogonSession:
+    case sidTypeLogonSession:
         return L"LogonSession";
-    case ExtSidTypeLabel:
+    case sidTypeLabel:
         return L"Label";
-    case ExtSidTypeUnknown:
+    case sidTypeUnknown:
     default:
         return T_Unknown;
     }

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.03
 *
-*  DATE:        20 Jan 2021
+*  DATE:        15 May 2021
 *
 *  WinObjEx64 Sonar plugin.
 *
@@ -22,7 +22,7 @@
 //
 // Maximum tested build Sonar is known to work.
 //
-#define SONAR_MAX_TESTED_BUILD 21296
+#define SONAR_MAX_TESTED_BUILD 21382
 
 //
 // Dll instance.
@@ -1411,9 +1411,9 @@ DWORD WINAPI PluginThread(
         OnResize(MainWindow);
 
         if (g_ctx.ParamBlock.Version.dwBuildNumber > SONAR_MAX_TESTED_BUILD) {
-            MessageBox(MainWindow,
-                TEXT("WARNING: Current Windows build is untested, this plugin may output wrong data."),
-                SONAR_WNDTITLE, MB_ICONINFORMATION);
+
+            SetWindowText(MainWindow, TEXT("Sonar: Untested Windows version, plugin may output wrong data"));
+
         }
 
         ListProtocols(FALSE);

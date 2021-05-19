@@ -968,7 +968,7 @@ VOID TestStart(
     //TestDebugObject();
     TestMailslot();
     //TestPartition();
-    //TestPrivateNamespace();
+    TestPrivateNamespace();
     //TestIoCompletion();
     //TestTimer();
     //TestTransaction();
