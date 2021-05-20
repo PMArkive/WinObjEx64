@@ -1241,10 +1241,10 @@ DWORD WinObjInitGlobals(
 */
 UINT WinObjExMain()
 {
-    BOOLEAN                 IsWine = FALSE;
+    BOOLEAN                 IsWine = FALSE, bIsFullAdmin = FALSE;
 
     ATOM                    classAtom = 0;
-    BOOL                    bIsFullAdmin = FALSE, bRet = TRUE, bLocalSystem = FALSE;
+    BOOL                    bRet = TRUE, bLocalSystem = FALSE;
 
     HMENU                   hMenu;
     HACCEL                  hAccTable = 0;

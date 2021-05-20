@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        16 May 2021
 *
 *  Common header file for the program support routines.
 *
@@ -253,7 +253,7 @@ void supCopyMemory(
     _In_ const void* src,
     _In_ size_t ccsrc);
 
-BOOL supUserIsFullAdmin(
+BOOLEAN supUserIsFullAdmin(
     VOID);
 
 VOID supCenterWindow(
@@ -312,7 +312,7 @@ VOID supCreateToolbarButtons(
     _In_ HWND hWndToolbar);
 
 VOID supInit(
-    _In_ BOOL IsFullAdmin);
+    _In_ BOOLEAN IsFullAdmin);
 
 VOID supShutdown(
     VOID);
@@ -801,3 +801,9 @@ VOID supObjectDumpHandlePopupMenu(
 VOID supObDumpShowError(
     _In_ HWND hwndDlg,
     _In_opt_ LPWSTR lpMessageText);
+
+NTSTATUS supGetFirmwareType(
+    _Out_ PFIRMWARE_TYPE FirmwareType);
+
+NTSTATUS supIsBootDriveVHD(
+    _Out_ PBOOLEAN IsVHD);

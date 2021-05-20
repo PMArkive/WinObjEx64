@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        16 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -52,14 +52,11 @@ VOID AboutDialogInit(
     BOOLEAN  bSecureBoot = FALSE;
     BOOLEAN  bHVCIEnabled = FALSE, bHVCIStrict = FALSE, bHVCIIUMEnabled = FALSE;
     HANDLE   hImage;
-    ULONG    returnLength;
-    NTSTATUS status;
     WCHAR    szBuffer[MAX_PATH];
 
     PCHAR    wine_ver, wine_str;
 
-    SYSTEM_BOOT_ENVIRONMENT_INFORMATION sbei;
-    SYSTEM_VHD_BOOT_INFORMATION* psvbi;
+    FIRMWARE_TYPE firmwareType;
 
     SetDlgItemText(hwndDlg, ID_ABOUT_PROGRAM, PROFRAM_NAME_AND_TITLE);
 
@@ -155,7 +152,6 @@ VOID AboutDialogInit(
     else {
         SetDlgItemText(hwndDlg, ID_ABOUT_OSNAME, szBuffer);
 
-        RtlSecureZeroMemory(&sbei, sizeof(sbei));
         RtlSecureZeroMemory(&szBuffer, sizeof(szBuffer));
 
         //
@@ -168,28 +164,27 @@ VOID AboutDialogInit(
         //
         // Query VHD boot state if possible.
         //
-        psvbi = (SYSTEM_VHD_BOOT_INFORMATION*)supHeapAlloc(PAGE_SIZE);
-        if (psvbi) {
-            status = NtQuerySystemInformation(SystemVhdBootInformation, psvbi, PAGE_SIZE, &returnLength);
-            if (NT_SUCCESS(status)) {
-                if (psvbi->OsDiskIsVhd) {
-                    _strcat(szBuffer, TEXT("VHD, "));
-                }
-            }
-            supHeapFree(psvbi);
+        if (g_kdctx.IsOsDiskVhd) {
+            _strcat(szBuffer, TEXT("VHD, "));
         }
 
         //
         // Query firmware mode and SecureBoot state for UEFI.
         //
-        status = NtQuerySystemInformation(SystemBootEnvironmentInformation, &sbei, sizeof(sbei), &returnLength);
-        if (NT_SUCCESS(status)) {
+        firmwareType = g_kdctx.Data->FirmwareType;
 
-            if (sbei.FirmwareType == FirmwareTypeUefi) {
+        if (firmwareType == FirmwareTypeUnknown) {
+
+            _strcpy(szBuffer, T_Unknown);
+
+        }
+        else {
+
+            if (firmwareType == FirmwareTypeUefi) {
                 _strcat(szBuffer, TEXT("UEFI"));
             }
             else {
-                if (sbei.FirmwareType == FirmwareTypeBios) {
+                if (firmwareType == FirmwareTypeBios) {
                     _strcat(szBuffer, TEXT("BIOS"));
                 }
                 else {
@@ -197,7 +192,7 @@ VOID AboutDialogInit(
                 }
             }
 
-            if (sbei.FirmwareType == FirmwareTypeUefi) {
+            if (firmwareType == FirmwareTypeUefi) {
                 bSecureBoot = FALSE;
                 if (supQuerySecureBootState(&bSecureBoot)) {
                     _strcat(szBuffer, TEXT(" with"));
@@ -219,9 +214,7 @@ VOID AboutDialogInit(
                 }
             }
         }
-        else {
-            _strcpy(szBuffer, TEXT("Unknown"));
-        }
+
         SetDlgItemText(hwndDlg, ID_ABOUT_ADVINFO, szBuffer);
     }
 
@@ -525,7 +518,7 @@ VOID AboutDialogCollectGlobals(
     }
 
     AddParameterValue(hwndOutput, TEXT("DriverOpenLoadStatus"), szBuffer);
-    AddParameterValueUlong(hwndOutput, TEXT("DriverConnectStatus"), g_kdctx.DriverConnectStatus); //kdConnectDriver status
+    AddParameterValue32Hex(hwndOutput, TEXT("DriverConnectStatus"), g_kdctx.DriverConnectStatus); //kdConnectDriver status
     AddParameterValue64Hex(hwndOutput, TEXT("KLDBG DeviceHandle"), (ULONG_PTR)g_kdctx.DeviceHandle);
 
     AddParameterValueBool(hwndOutput, TEXT("IsFullAdmin"), g_kdctx.IsFullAdmin); //admin privileges available

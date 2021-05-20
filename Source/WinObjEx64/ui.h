@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        16 May 2021
 *
 *  Common header file for the user interface.
 *
@@ -284,7 +284,6 @@ typedef struct _LVCOLUMNS_DATA {
 
 // Display for unknown value
 #define T_Unknown           TEXT("Unknown")
-#define T_UnknownValue      TEXT("(Unknown)")
 
 // Empty string
 #define T_EmptyString       TEXT("")

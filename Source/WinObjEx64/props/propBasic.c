@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        16 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -2448,7 +2448,13 @@ LPWSTR propFormatTokenAttribute(
             break;
 
         default:
-            _strcpy(szTemp, T_UnknownValue);
+
+            szTemp[0] = 0;
+            RtlStringCchPrintfSecure(szTemp,
+                MinimumResultLength,
+                TEXT("(Unknown: %lu)"),
+                Attribute->ValueType);
+
             IsSimpleConvert = TRUE;
             break;
 
@@ -2568,7 +2574,7 @@ PROP_QUERY_INFORMATION_ROUTINE(propBasicQueryToken)
                 lpType = TEXT("Octet string");
                 break;
             default:
-                lpType = T_UnknownValue;
+                lpType = T_Unknown;
                 break;
             }
             _strcpy(szBuffer, TEXT("Type: "));

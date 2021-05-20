@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        16 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -1133,7 +1133,9 @@ UINT supGetObjectNameIndexByTypeIndex(
         PBYTE Ref;
     } ObjectTypeEntry;
 
-    if (Object == NULL) {
+    if (Object == NULL || 
+        g_pObjectTypesInfo == NULL) 
+    {
         return ObjectTypeUnknown;
     }
 
@@ -1285,11 +1287,11 @@ VOID supJumpToFile(
 * Tests if the current user is admin with full access token.
 *
 */
-BOOL supUserIsFullAdmin(
+BOOLEAN supUserIsFullAdmin(
     VOID
 )
 {
-    BOOL     bResult = FALSE;
+    BOOLEAN  bResult = FALSE;
     HANDLE   hToken = NULL;
     NTSTATUS status;
     DWORD    i, Attributes;
@@ -1658,7 +1660,7 @@ VOID supxSetProcessMitigationPolicies()
 *
 */
 VOID supInit(
-    _In_ BOOL IsFullAdmin
+    _In_ BOOLEAN IsFullAdmin
 )
 {
     WCHAR szError[200];
@@ -7480,4 +7482,70 @@ VOID supObDumpShowError(
         SetWindowText(GetDlgItem(hwndDlg, ID_OBJECTDUMPERROR), lpMessageText);
     }
     ShowWindow(GetDlgItem(hwndDlg, ID_OBJECTDUMPERROR), SW_SHOW);
+}
+
+/*
+* supGetFirmwareType
+*
+* Purpose:
+*
+* Return firmware type.
+*
+*/
+NTSTATUS supGetFirmwareType(
+  _Out_ PFIRMWARE_TYPE FirmwareType
+)
+{
+    NTSTATUS ntStatus;
+    ULONG returnLength = 0;
+    SYSTEM_BOOT_ENVIRONMENT_INFORMATION sbei;
+
+    *FirmwareType = FirmwareTypeUnknown;
+
+    RtlSecureZeroMemory(&sbei, sizeof(sbei));
+
+    ntStatus = NtQuerySystemInformation(SystemBootEnvironmentInformation, 
+        &sbei, 
+        sizeof(sbei), 
+        &returnLength);
+
+    if (NT_SUCCESS(ntStatus)) {
+        *FirmwareType = sbei.FirmwareType;
+
+    }
+
+    return ntStatus;
+}
+
+/*
+* supIsBootDriveVHD
+*
+* Purpose:
+*
+* Query if the current boot drive is VHD type.
+*
+*/
+NTSTATUS supIsBootDriveVHD(
+    _Out_ PBOOLEAN IsVHD
+)
+{
+    NTSTATUS ntStatus;
+    ULONG returnLength = 0;
+    SYSTEM_VHD_BOOT_INFORMATION* psvbi;
+
+    *IsVHD = FALSE;
+
+    psvbi = (SYSTEM_VHD_BOOT_INFORMATION*)supHeapAlloc(PAGE_SIZE);
+    if (psvbi) {
+        ntStatus = NtQuerySystemInformation(SystemVhdBootInformation, psvbi, PAGE_SIZE, &returnLength);
+        if (NT_SUCCESS(ntStatus)) {
+            *IsVHD = psvbi->OsDiskIsVhd;
+        }
+        supHeapFree(psvbi);
+    }
+    else {
+        ntStatus = STATUS_INSUFFICIENT_RESOURCES;
+    }
+
+    return ntStatus;
 }

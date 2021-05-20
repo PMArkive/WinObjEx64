@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        16 May 2021
 *
 *  MINIMUM SUPPORTED OS WINDOWS 7
 *
@@ -300,18 +300,26 @@ Cleanup:
 }
 
 /*
-* kdOpenLoadDriverPrivate
+* kdpOpenLoadDriverPrivate
 *
 * Purpose:
 *
 * Open handle to helper driver device or load this driver.
 *
 */
-BOOL kdOpenLoadDriverPrivate(
+BOOLEAN kdpOpenLoadDriverPrivate(
     _In_ WCHAR* szDriverPath
 )
 {
     NTSTATUS ntStatus;
+
+    //
+    // Cannot use address translation on legacy boot.
+    //
+    if (g_kdctx.Data->FirmwareType != FirmwareTypeUefi) {
+        g_kdctx.DriverOpenLoadStatus = (ULONG)STATUS_NOT_SUPPORTED;
+        return FALSE;
+    }
 
     //
     // First, try to open existing device.
@@ -321,7 +329,7 @@ BOOL kdOpenLoadDriverPrivate(
         &g_kdctx.DeviceHandle);
 
     if (NT_SUCCESS(ntStatus)) {
-        g_kdctx.DriverOpenLoadStatus = STATUS_SUCCESS;
+        g_kdctx.DriverOpenLoadStatus = (ULONG)STATUS_SUCCESS;
         g_kdctx.IsOurLoad = FALSE;
         return TRUE;
     }
@@ -339,7 +347,7 @@ BOOL kdOpenLoadDriverPrivate(
     //
     ntStatus = kdLoadHelperDriver(KLDBGDRV, szDriverPath);
     if (!NT_SUCCESS(ntStatus)) {
-        g_kdctx.DriverOpenLoadStatus = ntStatus;
+        g_kdctx.DriverOpenLoadStatus = (ULONG)ntStatus;
         return FALSE;
     }
 
@@ -352,7 +360,7 @@ BOOL kdOpenLoadDriverPrivate(
         GENERIC_READ | GENERIC_WRITE,
         &g_kdctx.DeviceHandle);
 
-    g_kdctx.DriverOpenLoadStatus = ntStatus;
+    g_kdctx.DriverOpenLoadStatus = (ULONG)ntStatus;
 
     return NT_SUCCESS(ntStatus);
 }
@@ -3062,6 +3070,11 @@ BOOLEAN kdConnectDriver(
     if (g_kdctx.DeviceHandle != NULL)
         return TRUE;
 
+    if (g_kdctx.Data->FirmwareType != FirmwareTypeUefi) {
+        g_kdctx.DriverOpenLoadStatus = (ULONG)STATUS_NOT_SUPPORTED;
+        return FALSE;
+    }
+
     if (supEnablePrivilege(SE_DEBUG_PRIVILEGE, TRUE)) {
 
         _strcpy(szDeviceName, TEXT("\\Device\\"));
@@ -3408,6 +3421,9 @@ BOOL kdQuerySystemInformation(
             Context->MinimumUserModeAddress = 0x10000;
             Context->MaximumUserModeAddress = 0x00007FFFFFFEFFFF;
         }
+
+        supIsBootDriveVHD(&Context->IsOsDiskVhd);
+        supGetFirmwareType(&Context->Data->FirmwareType);
 
         SystemModules = (PRTL_PROCESS_MODULES)supGetLoadedModulesList(NULL);
         if (SystemModules == NULL)
@@ -3960,18 +3976,18 @@ BOOLEAN kdQueryKernelShims(
 }
 
 /*
-* kdOpenLoadDriverPublic
+* kdpOpenLoadDriverPublic
 *
 * Purpose:
 *
 * Open handle to WINDBG driver device or load this driver.
 *
 */
-BOOL kdOpenLoadDriverPublic(
+BOOLEAN kdpOpenLoadDriverPublic(
     _In_ WCHAR * szDriverPath
 )
 {
-    BOOL bResult;
+    BOOLEAN bResult;
 
     //
     // First, try to open existing device.
@@ -4014,10 +4030,10 @@ BOOL kdOpenLoadDriverPublic(
 *
 */
 VOID kdInit(
-    _In_ BOOL IsFullAdmin
+    _In_ BOOLEAN IsFullAdmin
 )
 {
-    BOOL bLoadState;
+    BOOLEAN bLoadState;
     WCHAR szBuffer[MAX_PATH * 2];
 
     RtlSecureZeroMemory(&g_kdctx, sizeof(g_kdctx));
@@ -4094,11 +4110,11 @@ VOID kdInit(
 
 #ifdef _USE_OWN_DRIVER
 
-        bLoadState = kdOpenLoadDriverPrivate(szBuffer);
+        bLoadState = kdpOpenLoadDriverPrivate(szBuffer);
 
 #else
 
-        bLoadState = kdOpenLoadDriverPublic(szBuffer);
+        bLoadState = kdpOpenLoadDriverPublic(szBuffer);
 
 #endif
 

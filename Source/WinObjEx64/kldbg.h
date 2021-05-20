@@ -91,6 +91,8 @@ typedef struct _KLDBG_SYSTEM_ADDRESS {
 //
 typedef struct _KLDBGPDATA {
 
+    FIRMWARE_TYPE FirmwareType;
+
     //address of invalid request handler
     PVOID IopInvalidDeviceRequest;
 
@@ -116,13 +118,16 @@ typedef struct _KLDBGPDATA {
 typedef struct _KLDBGCONTEXT {
 
     //Is user full admin
-    BOOL IsFullAdmin;
+    BOOLEAN IsFullAdmin;
 
     //we loaded driver?
-    BOOL IsOurLoad;
+    BOOLEAN IsOurLoad;
 
     //secureboot enabled?
-    BOOL IsSecureBoot;
+    BOOLEAN IsSecureBoot;
+
+    //VHD boot?
+    BOOLEAN IsOsDiskVhd;
 
     //system object header cookie (win10+)
     OBHEADER_COOKIE ObHeaderCookie;
@@ -299,6 +304,10 @@ typedef struct _NOTIFICATION_CALLBACKS {
     ULONG_PTR ExpCallbackListHead;
 } NOTIFICATION_CALLBACKS, *PNOTIFICATION_CALLBACKS;
 
+//
+// Callbacks global.
+// (defined in kldbg.c)
+//
 extern NOTIFICATION_CALLBACKS g_SystemCallbacks;
 
 typedef struct _W32K_API_SET_LOOKUP_PATTERN {
@@ -461,7 +470,7 @@ BOOL kdpReadSystemMemoryEx(
 #endif
 
 VOID kdInit(
-    _In_ BOOL IsFullAdmin);
+    _In_ BOOLEAN IsFullAdmin);
 
 VOID kdShutdown(
     VOID);
