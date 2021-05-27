@@ -31,14 +31,14 @@ LPWSTR GetNextSub(
 {
     SIZE_T i;
 
-    for (i = 0; (*ObjectFullPathName != 0) && (*ObjectFullPathName != '\\')
+    for (i = 0; (*ObjectFullPathName != 0) && (*ObjectFullPathName != L'\\')
         && (i < MAX_PATH); i++, ObjectFullPathName++)
     {
         Sub[i] = *ObjectFullPathName;
     }
     Sub[i] = 0;
 
-    if (*ObjectFullPathName == '\\')
+    if (*ObjectFullPathName == L'\\')
         ObjectFullPathName++;
 
     return ObjectFullPathName;
@@ -66,7 +66,7 @@ VOID ListToObject(
     if (ObjectName == NULL)
         return;
 
-    if (*ObjectName != '\\')
+    if (*ObjectName != L'\\')
         return;
 
     ObjectName++;
@@ -511,12 +511,12 @@ VOID FindObject(
                 tmp->ObjectName = tmp->NameBuffer;
                 tmp->ObjectType = tmp->NameBuffer + sdlen + 2 + objinf->Name.Length / sizeof(WCHAR);
                 _strcpy(tmp->ObjectName, DirName);
-                if ((DirName[0] == '\\') && (DirName[1] == 0)) {
+                if ((DirName[0] == L'\\') && (DirName[1] == 0)) {
                     _strncpy(tmp->ObjectName + sdlen, 1 + objinf->Name.Length / sizeof(WCHAR),
                         objinf->Name.Buffer, objinf->Name.Length / sizeof(WCHAR));
                 }
                 else {
-                    tmp->ObjectName[sdlen] = '\\';
+                    tmp->ObjectName[sdlen] = L'\\';
                     _strncpy(tmp->ObjectName + sdlen + 1, 1 + objinf->Name.Length / sizeof(WCHAR),
                         objinf->Name.Buffer, objinf->Name.Length / sizeof(WCHAR));
                 }
@@ -530,12 +530,12 @@ VOID FindObject(
             newdir = (LPWSTR)supHeapAlloc((sdlen + 4) * sizeof(WCHAR) + objinf->Name.Length);
             if (newdir != NULL) {
                 _strcpy(newdir, DirName);
-                if ((DirName[0] == '\\') && (DirName[1] == 0)) {
+                if ((DirName[0] == L'\\') && (DirName[1] == 0)) {
                     _strncpy(newdir + sdlen, 1 + objinf->Name.Length / sizeof(WCHAR),
                         objinf->Name.Buffer, objinf->Name.Length / sizeof(WCHAR));
                 }
                 else {
-                    newdir[sdlen] = '\\';
+                    newdir[sdlen] = L'\\';
                     _strncpy(newdir + sdlen + 1, 1 + objinf->Name.Length / sizeof(WCHAR),
                         objinf->Name.Buffer, objinf->Name.Length / sizeof(WCHAR));
                 }

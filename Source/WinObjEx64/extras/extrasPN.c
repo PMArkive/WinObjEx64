@@ -4,9 +4,9 @@
 *
 *  TITLE:       EXTRASPN.C
 *
-*  VERSION:     1.88
+*  VERSION:     1.90
 *
-*  DATE:        15 Dec 2020
+*  DATE:        15 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -30,6 +30,8 @@ ULONG PNSNumberOfObjects = 0;
 #endif
 
 #define T_NAMESPACENOTHING TEXT("No private namespaces found.")
+
+#define COLUMN_PNLIST_ROOTDIRADDRESS 2
 
 /*
 * PNDlgResetOutput
@@ -145,7 +147,7 @@ INT CALLBACK PNListCompareFunc(
     //
     // Sort addresses.
     //
-    if (lParamSort == 2) {
+    if (lParamSort == COLUMN_PNLIST_ROOTDIRADDRESS) {
         return supGetMaxOfTwoU64FromHex(PnDlgContext.ListView,
             lParam1,
             lParam2,
@@ -283,16 +285,16 @@ VOID PNDlgOutputSelectedSidInformation(
     HWND hComboBox;
     LRESULT nSelected;
     PSID pSid = NULL;
-    LPWSTR SidType, SidValue;
-    SIZE_T SidLength;
+    LPWSTR lpSidType, lpEnd, lpSidValue;
+    SIZE_T sidLength;
 
     DWORD cAccountName = 0, cReferencedDomainName = 0;
 
     WCHAR szName[MAX_LOOKUP_NAME];
     WCHAR szDomain[MAX_LOOKUP_NAME];
-    WCHAR szAccountInfo[MAX_PATH * 3];
+    WCHAR szAccountInfo[MAX_LOOKUP_NAME * 3];
 
-    EXT_SID_NAME_USE peUse;
+    ULONG peUse;
 
 
     //
@@ -301,30 +303,38 @@ VOID PNDlgOutputSelectedSidInformation(
     if (Sid == NULL) {
         hComboBox = GetDlgItem(hwndDlg, ID_BDESCRIPTOR_SID);
 
-        nSelected = SendMessage(hComboBox, CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
+        nSelected = SendMessage(hComboBox, 
+            CB_GETCURSEL, 
+            (WPARAM)0, 
+            (LPARAM)0);
+        
         if (nSelected != CB_ERR) {
 
-            SidLength = SendMessage(hComboBox, CB_GETLBTEXTLEN, (WPARAM)nSelected, 0);
-            if (SidLength) {
+            sidLength = SendMessage(hComboBox,
+                CB_GETLBTEXTLEN, 
+                (WPARAM)nSelected, 
+                0);
+            
+            if (sidLength) {
 
-                SidValue = (LPWSTR)supHeapAlloc((1 + SidLength) * sizeof(WCHAR));
-                if (SidValue) {
+                lpSidValue = (LPWSTR)supHeapAlloc((1 + sidLength) * sizeof(WCHAR));
+                if (lpSidValue) {
 
-                    if (CB_ERR != SendMessage(hComboBox, CB_GETLBTEXT, nSelected, (LPARAM)SidValue)) {
-
-                        if (ConvertStringSidToSid(SidValue, &pSid)) {
-                            bNeedFree = TRUE;
-                        }
+                    if (CB_ERR != SendMessage(hComboBox, 
+                        CB_GETLBTEXT, 
+                        nSelected, 
+                        (LPARAM)lpSidValue)) 
+                    {
+                        bNeedFree = ConvertStringSidToSid(lpSidValue, &pSid);
                     }
 
-                    supHeapFree(SidValue);
+                    supHeapFree(lpSidValue);
                 }
             }
         }
     }
     else {
         pSid = Sid;
-        bNeedFree = FALSE;
     }
 
     //
@@ -340,6 +350,7 @@ VOID PNDlgOutputSelectedSidInformation(
     RtlSecureZeroMemory(szDomain, sizeof(szDomain));
     cAccountName = MAX_LOOKUP_NAME;
     cReferencedDomainName = MAX_LOOKUP_NAME;
+    RtlSecureZeroMemory(szAccountInfo, sizeof(szAccountInfo));
 
     if (LookupAccountSid(NULL,
         pSid,
@@ -349,58 +360,27 @@ VOID PNDlgOutputSelectedSidInformation(
         &cReferencedDomainName,
         (SID_NAME_USE*)&peUse))
     {
-        RtlSecureZeroMemory(szAccountInfo, sizeof(szAccountInfo));
         _strcpy(szAccountInfo, szDomain);
-        if ((cAccountName) && (cReferencedDomainName)) {
+        if (cAccountName && cReferencedDomainName) {
             _strcat(szAccountInfo, TEXT("\\"));
         }
-        _strcat(szAccountInfo, szName);
+        lpEnd = _strcat(szAccountInfo, szName);
 
         //
         // Type of the account.
         //
-        switch (peUse) {
-        case ExtSidTypeUser:
-            SidType = TEXT(" (SidUserType)");
-            break;
-        case ExtSidTypeGroup:
-            SidType = TEXT(" (SidTypeGroup)");
-            break;
-        case ExtSidTypeDomain:
-            SidType = TEXT(" (SidTypeDomain)");
-            break;
-        case ExtSidTypeAlias:
-            SidType = TEXT(" (SidTypeAlias)");
-            break;
-        case ExtSidTypeWellKnownGroup:
-            SidType = TEXT(" (SidTypeWellKnownGroup)");
-            break;
-        case ExtSidTypeDeletedAccount:
-            SidType = TEXT(" (SidTypeDeletedAccount)");
-            break;
-        case ExtSidTypeInvalid:
-            SidType = TEXT(" (SidTypeInvalid)");
-            break;
-        case ExtSidTypeComputer:
-            SidType = TEXT(" (SidTypeComputer)");
-            break;
-        case ExtSidTypeLabel:
-            SidType = TEXT(" (SidTypeLabel)");
-            break;
-        case ExtSidTypeLogonSession:
-            SidType = TEXT(" (SidTypeLogonSession)");
-            break;
-        case ExtSidTypeUnknown:
-        default:
-            SidType = TEXT(" (SidTypeUnknown)");
-            break;
-        }
+        lpSidType = supGetSidNameUse((SID_NAME_USE)peUse);
 
-        _strcat(szAccountInfo, SidType);
+        RtlStringCchPrintfSecure(lpEnd, 
+            MAX_PATH, 
+            TEXT(" (%ws)"),
+            lpSidType);
+
     }
     else {
         _strcpy(szAccountInfo, T_CannotQuery);
     }
+
     SetDlgItemText(hwndDlg, ID_BDESCRIPTOR_SID_ACCOUNT, szAccountInfo);
 
     if (bNeedFree)

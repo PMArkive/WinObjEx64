@@ -1,4 +1,8 @@
+added Section object structured dump
+added ALPC port connections list (similar to !alpc /lpc windbg command)
+added MmUnloadedDrivers list
 added ExCreateCallback list to the callbacks list (PR #26)
+internal rearrange
 
 v1.8.8
 internal rearrange

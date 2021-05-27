@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.H
 *
-*  VERSION:     1.88
+*  VERSION:     1.90
 *
-*  DATE:        15 Mar 2021
+*  DATE:        17 May 2021
 *
 *  Common header file for the program support routines.
 *
@@ -75,7 +75,7 @@ typedef struct _PS_HANDLE_DUMP_ENUM_CONTEXT {
     _In_ HWND ListView;
     _In_ HIMAGELIST ImageList;
     _In_ PVOID ProcessList;
-} PS_HANDLE_DUMP_ENUM_CONTEXT, * PPS_HANDLE_DUMP_ENUM_CONTEXT;
+} PS_HANDLE_DUMP_ENUM_CONTEXT, *PPS_HANDLE_DUMP_ENUM_CONTEXT;
 
 // return true to stop enumeration
 typedef BOOL(CALLBACK* PENUMERATE_SL_CACHE_VALUE_DESCRIPTORS_CALLBACK)(
@@ -85,11 +85,11 @@ typedef BOOL(CALLBACK* PENUMERATE_SL_CACHE_VALUE_DESCRIPTORS_CALLBACK)(
 
 // return true to stop enumeration
 typedef BOOL(CALLBACK* PENUMERATE_HANDLE_DUMP_CALLBACK)(
-    _In_ SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX *HandleEntry,
+    _In_ SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX* HandleEntry,
     _In_opt_ PVOID UserContext
     );
 
-typedef NTSTATUS(NTAPI *PNTOBJECTOPENPROCEDURE)(
+typedef NTSTATUS(NTAPI* PNTOBJECTOPENPROCEDURE)(
     _Out_ PHANDLE ObjectHandle,
     _In_ ACCESS_MASK DesiredAccess,
     _In_ POBJECT_ATTRIBUTES ObjectAttributes);
@@ -120,11 +120,6 @@ typedef struct _PROCESS_MITIGATION_POLICY_RAW_DATA {
 #define GET_BIT(Integer, Bit) (((Integer) >> (Bit)) & 0x1)
 #define SET_BIT(Integer, Bit) ((Integer) |= 1 << (Bit))
 #define CLEAR_BIT(Integer, Bit) ((Integer) &= ~(1 << (Bit)))
-
-//
-// Conversion buffer size
-//
-#define DBUFFER_SIZE                 512
 
 typedef struct _ENUMCHILDWNDDATA {
     RECT Rect;
@@ -171,12 +166,14 @@ typedef struct tagVERHEAD {
 // Use shared NTSUP forward.
 //
 
+#define supGetSystemInfoEx ntsupGetSystemInfoEx
 #define supVirtualAllocEx ntsupVirtualAllocEx
 #define supVirtualAlloc ntsupVirtualAlloc
 #define supVirtualFree ntsupVirtualFree
 #define supEnablePrivilege ntsupEnablePrivilege
 #define supGetCurrentProcessToken ntsupGetCurrentProcessToken
 #define supQuerySystemRangeStart ntsupQuerySystemRangeStart
+#define supQueryUserModeAccessibleRange ntsupQueryUserModeAccessibleRange
 #define supIsProcess32bit ntsupIsProcess32bit
 #define supQueryThreadWin32StartAddress ntsupQueryThreadWin32StartAddress
 #define supOpenDirectory ntsupOpenDirectory
@@ -192,6 +189,9 @@ typedef struct tagVERHEAD {
 #define supOpenThread ntsupOpenThread
 #define supCICustomKernelSignersAllowed ntsupCICustomKernelSignersAllowed
 #define supPrivilegeEnabled ntsupPrivilegeEnabled
+
+ULONG supConvertFromPteProtectionMask(
+    _In_ ULONG ProtectionMask);
 
 HTREEITEM supTreeListAddItem(
     _In_ HWND TreeList,
@@ -248,17 +248,24 @@ void supCopyMemory(
     _In_ const void* src,
     _In_ size_t ccsrc);
 
-BOOL supUserIsFullAdmin(
+BOOLEAN supUserIsFullAdmin(
     VOID);
 
 VOID supCenterWindow(
     _In_ HWND hwnd);
 
+VOID supCenterWindowPerScreen(
+    _In_ HWND hwnd);
+
 VOID supSetWaitCursor(
     _In_ BOOL fSet);
 
+VOID supUpdateLoadBannerText(
+    _In_ HWND hwndBanner,
+    _In_ LPCWSTR lpText);
+
 HWND supDisplayLoadBanner(
-    _In_ HWND hwndParent,
+    _In_opt_ HWND hwndParent,
     _In_ LPWSTR lpMessage);
 
 HIMAGELIST supLoadImageList(
@@ -307,7 +314,7 @@ VOID supCreateToolbarButtons(
     _In_ HWND hWndToolbar);
 
 VOID supInit(
-    _In_ BOOL IsFullAdmin);
+    _In_ BOOLEAN IsFullAdmin);
 
 VOID supShutdown(
     VOID);
@@ -362,15 +369,15 @@ BOOL supQueryWinstationDescription(
     _Inout_	LPWSTR Buffer,
     _In_ DWORD ccBuffer);
 
-BOOL supQueryProcessNameByEPROCESS(
-    _In_ ULONG_PTR ValueOfEPROCESS,
-    _In_ PVOID ProcessList,
-    _Inout_ LPWSTR Buffer,
-    _In_ DWORD ccBuffer);
-
 PVOID supGetTokenInfo(
     _In_ HANDLE TokenHandle,
     _In_ TOKEN_INFORMATION_CLASS TokenInformationClass,
+    _Out_opt_ PULONG ReturnLength);
+
+PVOID supGetLoadedModulesList(
+    _Out_opt_ PULONG ReturnLength);
+
+PVOID supGetLoadedModulesList2(
     _Out_opt_ PULONG ReturnLength);
 
 PVOID supGetSystemInfo(
@@ -378,6 +385,11 @@ PVOID supGetSystemInfo(
     _Out_opt_ PULONG ReturnLength);
 
 NTSTATUS supOpenDeviceObject(
+    _Out_ PHANDLE ObjectHandle,
+    _In_ ACCESS_MASK DesiredAccess,
+    _In_ POBJECT_ATTRIBUTES ObjectAttributes);
+
+NTSTATUS supOpenDeviceObjectEx(
     _Out_ PHANDLE ObjectHandle,
     _In_ ACCESS_MASK DesiredAccess,
     _In_ POBJECT_ATTRIBUTES ObjectAttributes);
@@ -555,13 +567,13 @@ NTSTATUS supOpenProcessTokenEx(
 
 BOOL supPrintTimeConverted(
     _In_ PLARGE_INTEGER Time,
-    _In_ WCHAR * lpszBuffer,
+    _In_ WCHAR* lpszBuffer,
     _In_ SIZE_T cchBuffer);
 
 BOOL supGetListViewItemParam(
     _In_ HWND hwndListView,
     _In_ INT itemIndex,
-    _Out_ PVOID * outParam);
+    _Out_ PVOID* outParam);
 
 VOID supSetMinMaxTrackSize(
     _In_ PMINMAXINFO MinMaxInfo,
@@ -582,11 +594,11 @@ LPWSTR supIntegrityToString(
 BOOL supLookupSidUserAndDomainEx(
     _In_ PSID Sid,
     _In_ LSA_HANDLE PolicyHandle,
-    _Out_ LPWSTR * lpSidUserAndDomain);
+    _Out_ LPWSTR* lpSidUserAndDomain);
 
 BOOL supLookupSidUserAndDomain(
     _In_ PSID Sid,
-    _Out_ LPWSTR * lpSidUserAndDomain);
+    _Out_ LPWSTR* lpSidUserAndDomain);
 
 NTSTATUS supLsaOpenMachinePolicy(
     _In_ ACCESS_MASK DesiredAccess,
@@ -682,12 +694,16 @@ ULONG supHashString(
     _In_ PCWSTR String,
     _In_ ULONG Length);
 
+ULONG supHashStringAnsi(
+    _In_ PCSTR String,
+    _In_ ULONG Length);
+
 ULONG supHashUnicodeString(
     _In_ CONST UNICODE_STRING * String);
 
 NTSTATUS supCreateSystemAdminAccessSD(
-    _Out_ PSECURITY_DESCRIPTOR* SecurityDescriptor,
-    _Out_ PACL* DefaultAcl);
+    _Out_ PSECURITY_DESCRIPTOR * SecurityDescriptor,
+    _Out_ PACL * DefaultAcl);
 
 VOID supSetProcessMitigationImagesPolicy();
 
@@ -716,10 +732,8 @@ BOOLEAN supIsFileImageSection(
     _In_ ULONG AllocationAttributes);
 
 BOOLEAN supIsDriverShimmed(
+    _In_ PKSE_ENGINE_DUMP KseEngineDump,
     _In_ PVOID DriverBaseAddress);
-
-VOID supDestroyShimmedDriversList(
-    _In_ PLIST_ENTRY ListHead);
 
 BOOL supListViewExportToFile(
     _In_ LPWSTR FileName,
@@ -752,11 +766,11 @@ NTSTATUS supOpenPortObjectByName(
 NTSTATUS supOpenPortObjectFromContext(
     _Out_ PHANDLE ObjectHandle,
     _In_ ACCESS_MASK DesiredAccess,
-    _In_ PROP_OBJECT_INFO* Context);
+    _In_ PROP_OBJECT_INFO * Context);
 
 NTSTATUS supQueryProcessImageFileNameWin32(
     _In_ HANDLE UniqueProcessId,
-    _Out_ PUNICODE_STRING* ProcessImageFileName);
+    _Out_ PUNICODE_STRING * ProcessImageFileName);
 
 PSID supGetSidFromAce(
     _In_ PACE_HEADER AceHeader);
@@ -764,7 +778,7 @@ PSID supGetSidFromAce(
 NTSTATUS supQuerySecurityInformation(
     _In_ HANDLE ObjectHandle,
     _In_ SECURITY_INFORMATION SecurityInformationClass,
-    _Out_ PVOID* Buffer,
+    _Out_ PVOID * Buffer,
     _Out_opt_ PULONG ReturnLength);
 
 typedef VOID(CALLBACK* pfnPopupMenuHandler)(
@@ -785,3 +799,25 @@ ULONG supAddLVColumnsFromArray(
     _In_ HWND ListView,
     _In_ PLVCOLUMNS_DATA ColumnsData,
     _In_ ULONG NumberOfColumns);
+
+VOID supShowInitError(
+    _In_ DWORD ErrorType);
+
+wchar_t* supExtractFileName(
+    _In_ const wchar_t* lpFullPath);
+
+VOID supObjectDumpHandlePopupMenu(
+    _In_ HWND hwndDlg);
+
+VOID supObDumpShowError(
+    _In_ HWND hwndDlg,
+    _In_opt_ LPWSTR lpMessageText);
+
+NTSTATUS supGetFirmwareType(
+    _Out_ PFIRMWARE_TYPE FirmwareType);
+
+NTSTATUS supIsBootDriveVHD(
+    _Out_ PBOOLEAN IsVHD);
+
+LPWSTR supPathAddBackSlash(
+    _In_ LPWSTR lpszPath);
