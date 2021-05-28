@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -563,13 +563,18 @@ VOID ProcessListSetInfo(
             enumContext.ObjectAddress = ObjectAddress;
             enumContext.ObjectTypeIndex = ObjectTypeIndex;
 
+            supListViewEnableRedraw(pDlgContext->ListView, FALSE);
+
             supEnumHandleDump(pHandles,
                 (PENUMERATE_HANDLE_DUMP_CALLBACK)ProcessEnumHandlesCallback,
                 &enumContext);
 
+            supListViewEnableRedraw(pDlgContext->ListView, TRUE);
+
             supHeapFree(pHandles);
             pHandles = NULL;
         }
+
 
     } while (FALSE);
 

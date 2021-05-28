@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2015 - 2020
+*  (C) COPYRIGHT AUTHORS, 2015 - 2021
 *
 *  TITLE:       LIST.C
 *
-*  VERSION:     1.88
+*  VERSION:     1.90
 *
-*  DATE:        04 Dec 2020
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -396,13 +396,15 @@ VOID ListObjectsInDirectory(
     ULONG               queryContext = 0, rLength;
     HANDLE              directoryHandle = NULL;
 
-    POBJECT_DIRECTORY_INFORMATION objinf;
+    POBJECT_DIRECTORY_INFORMATION infoBuffer;
 
     ListView_DeleteAllItems(g_hwndObjectList);
 
     supOpenDirectory(&directoryHandle, NULL, lpObjectDirectory, DIRECTORY_QUERY);
     if (directoryHandle == NULL)
         return;
+
+    supListViewEnableRedraw(g_hwndObjectList, FALSE);
 
     do {
 
@@ -414,27 +416,52 @@ VOID ListObjectsInDirectory(
             rLength = 1024 * 64;
         }
         else {
+
             rLength = 0;
-            ntStatus = NtQueryDirectoryObject(directoryHandle, NULL, 0, TRUE, FALSE, &queryContext, &rLength);
+
+            ntStatus = NtQueryDirectoryObject(
+                directoryHandle,
+                NULL,
+                0,
+                TRUE,
+                FALSE,
+                &queryContext,
+                &rLength);
+
             if (ntStatus != STATUS_BUFFER_TOO_SMALL)
                 break;
         }
 
-        objinf = (POBJECT_DIRECTORY_INFORMATION)supHeapAlloc((SIZE_T)rLength);
-        if (objinf == NULL)
-            break;
+        infoBuffer = (POBJECT_DIRECTORY_INFORMATION)supHeapAlloc((SIZE_T)rLength);
+        if (infoBuffer) {
 
-        ntStatus = NtQueryDirectoryObject(directoryHandle, objinf, rLength, TRUE, FALSE, &queryContext, &rLength);
-        if (!NT_SUCCESS(ntStatus)) {
-            supHeapFree(objinf);
+            ntStatus = NtQueryDirectoryObject(
+                directoryHandle,
+                infoBuffer,
+                rLength,
+                TRUE,
+                FALSE,
+                &queryContext,
+                &rLength);
+
+            if (NT_SUCCESS(ntStatus)) {
+                AddListViewItem(directoryHandle, infoBuffer);
+            }
+            else {
+                supHeapFree(infoBuffer);
+                break;
+            }
+
+            supHeapFree(infoBuffer);
+
+        }
+        else {
             break;
         }
 
-        AddListViewItem(directoryHandle, objinf);
-
-        supHeapFree(objinf);
-
     } while (TRUE);
+
+    supListViewEnableRedraw(g_hwndObjectList, TRUE);
 
     NtClose(directoryHandle);
 }

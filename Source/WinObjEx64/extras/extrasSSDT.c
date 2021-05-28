@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        16 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -348,7 +348,9 @@ INT_PTR CALLBACK SdtDialogProc(
         case ID_VIEW_REFRESH:
             pDlgContext = (EXTRASCONTEXT*)GetProp(hwndDlg, T_DLGCONTEXT);
             if (pDlgContext) {
+                supListViewEnableRedraw(pDlgContext->ListView, FALSE);
                 SdtListCreate(hwndDlg, TRUE, pDlgContext);
+                supListViewEnableRedraw(pDlgContext->ListView, TRUE);
             }
             break;
 
@@ -1861,6 +1863,8 @@ VOID extrasCreateSSDTDialog(
 
         SendMessage(hwndDlg, WM_SIZE, 0, 0);
 
+        supListViewEnableRedraw(pDlgContext->ListView, FALSE);
         SdtListCreate(pDlgContext->hwndDlg, FALSE, pDlgContext);
+        supListViewEnableRedraw(pDlgContext->ListView, TRUE);
     }
 }

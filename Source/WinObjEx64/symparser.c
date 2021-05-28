@@ -130,6 +130,25 @@ PCWSTR SympGetTypeNameString(
 }
 
 /// <summary>
+/// SymRegisterCallbackW64 wrapper
+/// </summary>
+/// <param name="Context"></param>
+/// <param name="CallbackFunction"></param>
+/// <param name="UserContext"></param>
+/// <returns></returns>
+BOOL SymParserRegisterCallback(
+    _In_ PSYMCONTEXT Context,
+    _In_ PSYMBOL_REGISTERED_CALLBACK64 CallbackFunction,
+    _In_ ULONG64 UserContext
+)
+{
+    return Context->DbgHelp.SymRegisterCallbackW64(
+        Context->ProcessHandle,
+        CallbackFunction,
+        UserContext);
+}
+
+/// <summary>
 /// SymLoadModuleExW wrapper
 /// </summary>
 /// <param name="Context"></param>
@@ -1307,6 +1326,7 @@ BOOL SympInitPointers(
     LPCSTR szFuncs[] = {
         "SymSetOptions",
         "SymInitializeW",
+        "SymRegisterCallbackW64",
         "SymLoadModuleExW",
         "SymGetTypeInfo",
         "SymFromNameW",
@@ -1373,6 +1393,7 @@ PSYMCONTEXT SymParserCreate(
         Context->Parser.GetFieldOffset = (SPGetFieldOffset)SymParserGetFieldOffset;
         Context->Parser.LoadModule = (SPLoadModule)SymParserLoadModule;
         Context->Parser.UnloadModule = (SPUnloadModule)SymParserUnloadModule;
+        Context->Parser.RegisterCallback = (SPRegisterCallback)SymParserRegisterCallback;
         Context->Parser.LookupAddressBySymbol = (SPLookupAddressBySymbol)SymParserLookupAddressBySymbol;
         Context->Parser.LookupSymbolByAddress = (SPLookupSymbolByAddress)SymParserLookupSymbolByAddress;
         Context->Parser.DumpSymbolInformation = (SPDumpSymbolInformation)SymParserDumpSymbolInformation;
@@ -1510,7 +1531,8 @@ BOOL SymGlobalsInit(
                 SYMOPT_UNDNAME |
                 SYMOPT_OVERWRITE |
                 SYMOPT_SECURE |
-                SYMOPT_EXACT_SYMBOLS;
+                SYMOPT_EXACT_SYMBOLS |
+                SYMOPT_DEBUG;
         }
 
         g_SymGlobals.ApiSet.SymSetOptions(symOptions);
@@ -1532,7 +1554,7 @@ BOOL SymGlobalsInit(
         FreeLibrary(hDbg);
         g_SymGlobals.DllHandle = NULL;
     }
-
+    
     return bResult;
 }
 

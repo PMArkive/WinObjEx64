@@ -503,6 +503,11 @@ BOOLEAN kdQueryMmUnloadedDrivers(
     _In_ PKLDBGCONTEXT Context,
     _Out_ PVOID* UnloadedDrivers);
 
+BOOL kdGetAddressFromSymbol(
+    _In_ KLDBGCONTEXT* Context,
+    _In_ LPCWSTR SymbolName,
+    _Inout_ ULONG_PTR* Address);
+
 /*
 * ObGetObjectFastReference
 *

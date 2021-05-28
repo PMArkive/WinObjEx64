@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -845,6 +845,8 @@ DWORD WINAPI CreateThreadListProc(
             SortedHandleList = supHandlesCreateFilteredAndSortedList(GetCurrentProcessId(), FALSE);
             stlptr = stl;
 
+            supListViewEnableRedraw(PsDlgContext.ListView, FALSE);
+
             for (i = 0; i < ThreadCount; i++, stlptr++) {
 
                 threadEntry = (PROP_UNNAMED_OBJECT_INFO*)stlptr->EntryPtr;
@@ -977,6 +979,8 @@ DWORD WINAPI CreateThreadListProc(
                 PsDlgContext.ListView,
                 PsListCompareFunc,
                 PsDlgContext.lvColumnToSort);
+
+            supListViewEnableRedraw(PsDlgContext.ListView, TRUE);
 
         }
     }

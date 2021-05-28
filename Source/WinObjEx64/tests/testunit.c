@@ -1084,14 +1084,14 @@ VOID TestSymbols()
 
             }
 
-
-            var = SymParser->LookupAddressBySymbol(Context,
+            var = 0;
+            if (kdGetAddressFromSymbol(
+                &g_kdctx,
                 TEXT("ObHeaderCookie"),
-                &bStatus);
-
-            var = (ULONG_PTR)g_kdctx.NtOsBase + var - Context->ModuleBase;
-
-            DbgPrint("ObHeaderCookie %p\r\n", (PVOID)var);
+                &var))
+            {
+                DbgPrint("ObHeaderCookie %p\r\n", (PVOID)var);
+            }
 
             SymParser->UnloadModule(Context);
 

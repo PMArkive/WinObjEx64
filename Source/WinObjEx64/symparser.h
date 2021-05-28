@@ -101,6 +101,11 @@ typedef BOOL(WINAPI* pfnSymInitializeW)(
     _In_opt_ PCWSTR UserSearchPath,
     _In_ BOOL fInvadeProcess);
 
+typedef BOOL(WINAPI* pfnSymRegisterCallback64)(
+    _In_ HANDLE hProcess,
+    _In_ PSYMBOL_REGISTERED_CALLBACK64 CallbackFunction,
+    _In_ ULONG64 UserContext);
+
 typedef DWORD64(WINAPI* pfnSymLoadModuleExW)(
     _In_ HANDLE hProcess,
     _In_opt_ HANDLE hFile,
@@ -145,6 +150,7 @@ typedef BOOL(WINAPI* pfnSymCleanup)(
 typedef struct _DBGHELP_PTRS {
     pfnSymSetOptions SymSetOptions;
     pfnSymInitializeW SymInitialize;
+    pfnSymRegisterCallback64 SymRegisterCallback64;
     pfnSymLoadModuleExW SymLoadModuleEx;
     pfnSymGetTypeInfo SymGetTypeInfo;
     pfnSymFromNameW SymFromName;
@@ -158,6 +164,11 @@ typedef struct _DBGHELP_PTRS {
 // Symbol Parser
 //
 typedef struct _SYMCONTEXT* PSYMCONTEXT;
+
+typedef BOOL(WINAPI* SPRegisterCallback)(
+    _In_ PSYMCONTEXT Context,
+    _In_ PSYMBOL_REGISTERED_CALLBACK64 CallbackFunction,
+    _In_ ULONG64 UserContext);
 
 typedef BOOL(WINAPI* SPLoadModule)(
     _In_ PSYMCONTEXT Context,
@@ -292,6 +303,7 @@ typedef struct _SYMPARSER {
     SPGetArrayTypeId GetArrayTypeId;
     SPGetAddressOffset GetAddressOffset;
     SPGetChildrenCount GetChildrenCount;
+    SPRegisterCallback RegisterCallback;
     SPGetCallingConvertion GetCallingConvertion;
     SPDumpSymbolInformation DumpSymbolInformation;
     SPLookupAddressBySymbol LookupAddressBySymbol;

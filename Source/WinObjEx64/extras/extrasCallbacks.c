@@ -3914,7 +3914,8 @@ VOID DisplayCallbacksList(
 
                 if (QueryStatus == STATUS_NOT_FOUND) {
 #ifdef _DEBUG
-                    RtlStringCchPrintfSecure(szText, RTL_NUMBER_OF(szText),
+                    RtlStringCchPrintfSecure(szText, 
+                        RTL_NUMBER_OF(szText),
                         TEXT("Callback type %ws was not found"),
                         g_CallbacksDispatchTable[i].CallbackType);
 
@@ -3925,7 +3926,7 @@ VOID DisplayCallbacksList(
                 else {
 
                     RtlStringCchPrintfSecure(szText,
-                        200,
+                        RTL_NUMBER_OF(szText),
                         TEXT("Callback type %ws, error 0x%lX"),
                         g_CallbacksDispatchTable[i].CallbackType,
                         QueryStatus);

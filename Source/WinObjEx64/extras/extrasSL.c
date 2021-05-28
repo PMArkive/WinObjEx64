@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -622,12 +622,16 @@ VOID extrasCreateSLCacheDialog(
             //
             g_SLCacheImageIndex = ObManagerGetImageIndexByTypeIndex(ObjectTypeToken);
 
+            supListViewEnableRedraw(pDlgContext->ListView, FALSE);
+
             pDlgContext->Reserved = (ULONG_PTR)SLCacheData;
             supSLCacheEnumerate(SLCacheData, SLCacheEnumerateCallback, pDlgContext);
 
             _strcpy(szBuffer, TEXT("SLCache, number of descriptors = "));
             itostr(ListView_GetItemCount(pDlgContext->ListView), _strend(szBuffer));
             SetWindowText(pDlgContext->hwndDlg, szBuffer);
+
+            supListViewEnableRedraw(pDlgContext->ListView, TRUE);
         }
     }
     else {

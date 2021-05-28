@@ -190,6 +190,8 @@ typedef struct tagVERHEAD {
 #define supCICustomKernelSignersAllowed ntsupCICustomKernelSignersAllowed
 #define supPrivilegeEnabled ntsupPrivilegeEnabled
 
+#define supListViewEnableRedraw(ListView, fEnable) SendMessage(ListView, WM_SETREDRAW, (WPARAM)fEnable, (LPARAM)0)
+
 ULONG supConvertFromPteProtectionMask(
     _In_ ULONG ProtectionMask);
 

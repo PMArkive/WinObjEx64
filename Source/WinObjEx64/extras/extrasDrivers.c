@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -402,6 +402,8 @@ VOID DrvListUnloadedDrivers(
 
     iImage = ObManagerGetImageIndexByTypeIndex(ObjectTypeDriver);
 
+    supListViewEnableRedraw(hwndList, FALSE);
+
     for (i = 0; i < MI_UNLOADED_DRIVERS; i++) {
 
         if (pvDrivers[i].StartAddress &&
@@ -460,6 +462,8 @@ VOID DrvListUnloadedDrivers(
     ListView_SortItemsEx(hwndList,
         &DrvDlgCompareFunc,
         (LPARAM)Context);
+
+    supListViewEnableRedraw(hwndList, TRUE);
 }
 
 /*
@@ -497,6 +501,8 @@ VOID DrvListDrivers(
         return;
 
     iImage = ObManagerGetImageIndexByTypeIndex(ObjectTypeDriver);
+
+    supListViewEnableRedraw(hwndList, FALSE);
 
     for (i = 0; i < pModulesList->NumberOfModules; i++) {
 
@@ -601,6 +607,9 @@ VOID DrvListDrivers(
     ListView_SortItemsEx(hwndList,
         &DrvDlgCompareFunc,
         (LPARAM)Context);
+
+    supListViewEnableRedraw(hwndList, TRUE);
+
 }
 
 /*

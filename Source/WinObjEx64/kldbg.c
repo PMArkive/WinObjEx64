@@ -4095,6 +4095,72 @@ BOOLEAN kdpOpenLoadDriverPublic(
 }
 
 /*
+* kdGetAddressFromSymbol
+*
+* Purpose:
+*
+* Get fully adjusted address for ntoskrnl symbol by it name.
+*
+*/
+BOOL kdGetAddressFromSymbol(
+    _In_ KLDBGCONTEXT* Context,
+    _In_ LPCWSTR SymbolName,
+    _Inout_ ULONG_PTR* Address
+)
+{
+    BOOL bResult = FALSE;
+    ULONG_PTR address;
+    PSYMCONTEXT symContext = (PSYMCONTEXT)Context->NtOsSymContext;
+
+    *Address = 0;
+
+    //
+    // Verify context data.
+    //
+    if (Context->NtOsBase == NULL ||
+        Context->NtOsSize == 0 ||
+        Context->NtOsSymContext == NULL)
+    {
+        return FALSE;
+    }
+
+    //
+    // Is pdb loaded.
+    //
+    if (symContext->ModuleBase == 0)
+        return FALSE;
+
+    address = symContext->Parser.LookupAddressBySymbol(
+        symContext,
+        SymbolName,
+        &bResult);
+
+    if (bResult && address) {
+
+        //
+        // Adjust address to ntoskrnl base. 
+        //
+        address = (ULONG_PTR)Context->NtOsBase + address - symContext->ModuleBase;
+
+        //
+        // Validate resulting address value.
+        //
+        if (kdAddressInNtOsImage((PVOID)address)) {
+            *Address = address;
+        }
+        else {
+            //
+            // This is bogus address not in ntoskrnl range, bail out.
+            //
+            bResult = FALSE;
+        }
+
+    }
+
+    return bResult;
+}
+
+/*
 * symInit
 *
 * Purpose:
