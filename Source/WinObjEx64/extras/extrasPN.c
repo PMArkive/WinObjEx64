@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        15 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -43,11 +43,11 @@ ULONG PNSNumberOfObjects = 0;
 */
 VOID PNDlgResetOutput()
 {
-    SetDlgItemText(PnDlgContext.hwndDlg, ID_NAMESPACE_ROOT, TEXT(""));
-    SetDlgItemText(PnDlgContext.hwndDlg, ID_OBJECT_ADDR, TEXT(""));
-    SetDlgItemText(PnDlgContext.hwndDlg, ID_SIZEOFBOUNDARYINFO, TEXT(""));
-    SetDlgItemText(PnDlgContext.hwndDlg, ID_BDESCRIPTOR_ADDRESS, TEXT(""));
-    SetDlgItemText(PnDlgContext.hwndDlg, ID_BDESCRIPTOR_NAME, TEXT(""));
+    SetDlgItemText(PnDlgContext.hwndDlg, ID_NAMESPACE_ROOT, T_EmptyString);
+    SetDlgItemText(PnDlgContext.hwndDlg, ID_OBJECT_ADDR, T_EmptyString);
+    SetDlgItemText(PnDlgContext.hwndDlg, ID_SIZEOFBOUNDARYINFO, T_EmptyString);
+    SetDlgItemText(PnDlgContext.hwndDlg, ID_BDESCRIPTOR_ADDRESS, T_EmptyString);
+    SetDlgItemText(PnDlgContext.hwndDlg, ID_BDESCRIPTOR_NAME, T_EmptyString);
     SetDlgItemText(PnDlgContext.hwndDlg, ID_BDESCRIPTOR_SID_ACCOUNT, T_CannotQuery);
     SetDlgItemText(PnDlgContext.hwndDlg, ID_INTEGRITYLABEL, T_CannotQuery);
     SetDlgItemText(PnDlgContext.hwndDlg, ID_BDESCRIPTOR_ENTRIES, TEXT("0"));
@@ -240,7 +240,8 @@ BOOL PNDlgQueryInfo(
 #ifndef _DEBUG
     hwndBanner = supDisplayLoadBanner(
         hwndDlg,
-        TEXT("Loading private namespaces information, please wait"));
+        TEXT("Loading private namespaces information, please wait"),
+        FALSE);
 #else
     UNREFERENCED_PARAMETER(hwndDlg);
 #endif
@@ -428,7 +429,7 @@ BOOL CALLBACK PNDlgBoundaryDescriptorCallback(
         Sid = (PSID)RtlOffsetToPointer(Entry, sizeof(OBJECT_BOUNDARY_ENTRY));
         if (ConvertSidToStringSid(Sid, &pString)) {
 
-            SendMessage(GetDlgItem(hwndDlg, ID_BDESCRIPTOR_SID),
+            SendDlgItemMessage(hwndDlg, ID_BDESCRIPTOR_SID,
                 CB_ADDSTRING, (WPARAM)0, (LPARAM)pString);
 
             LocalFree(pString);
@@ -559,12 +560,12 @@ VOID PNDlgShowNamespaceInfo(
             //
             // Select first SID if present.
             //
-            nSid = SendMessage(GetDlgItem(hwndDlg, ID_BDESCRIPTOR_SID), CB_GETCOUNT, 0, 0);
-
+            nSid = SendDlgItemMessage(hwndDlg, ID_BDESCRIPTOR_SID, CB_GETCOUNT, 0, 0);
+            
             EnableWindow(GetDlgItem(hwndDlg, ID_BDESCRIPTOR_SID), (nSid > 0) ? TRUE : FALSE);
             EnableWindow(GetDlgItem(hwndDlg, ID_BDESCRIPTOR_SID_COPY), (nSid > 0) ? TRUE : FALSE);
 
-            SendMessage(GetDlgItem(hwndDlg, ID_BDESCRIPTOR_SID), CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+            SendDlgItemMessage(hwndDlg, ID_BDESCRIPTOR_SID, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 
             supHeapFree(BoundaryDescriptor);
         }
@@ -733,6 +734,7 @@ VOID PNDialogHandlePopup(
 )
 {
     HMENU hMenu;
+    UINT uPos = 0;
     EXTRASCONTEXT* Context = (EXTRASCONTEXT*)lpUserParam;
 
     hMenu = CreatePopupMenu();
@@ -741,11 +743,14 @@ VOID PNDialogHandlePopup(
         if (supListViewAddCopyValueItem(hMenu,
             Context->ListView,
             ID_OBJECT_COPY,
-            0,
+            uPos,
             lpPoint,
             &Context->lvItemHit,
             &Context->lvColumnHit))
         {
+            InsertMenu(hMenu, ++uPos, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+            InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_VIEW_REFRESH, T_VIEW_REFRESH);
+
             TrackPopupMenu(hMenu,
                 TPM_RIGHTBUTTON | TPM_LEFTALIGN,
                 lpPoint->x,

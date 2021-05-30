@@ -201,8 +201,7 @@ VOID PsListHandlePopupMenu(
                 &PsDlgContext.lvItemHit,
                 &PsDlgContext.lvColumnHit))
             {
-                uPos++;
-                InsertMenu(hMenu, uPos++, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+                InsertMenu(hMenu, ++uPos, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
             }
 
         }

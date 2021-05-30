@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        19 May 2021
+*  DATE:        27 May 2021
 *
 *  Common header file for the Kernel Debugger Driver support.
 *
@@ -502,6 +502,12 @@ BOOLEAN kdQueryKernelShims(
 BOOLEAN kdQueryMmUnloadedDrivers(
     _In_ PKLDBGCONTEXT Context,
     _Out_ PVOID* UnloadedDrivers);
+
+BOOL kdGetFieldOffsetFromSymbol(
+    _In_ KLDBGCONTEXT* Context,
+    _In_ LPCWSTR SymbolName,
+    _In_ LPCWSTR FieldName,
+    _Out_ ULONG* Offset);
 
 BOOL kdGetAddressFromSymbol(
     _In_ KLDBGCONTEXT* Context,

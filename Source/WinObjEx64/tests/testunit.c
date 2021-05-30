@@ -1093,10 +1093,8 @@ VOID TestSymbols()
                 DbgPrint("ObHeaderCookie %p\r\n", (PVOID)var);
             }
 
-            SymParser->UnloadModule(Context);
-
         }
-        SymParserDestroy(Context);
+
     }
 
     supHeapFree(pOutput);
@@ -1124,7 +1122,7 @@ VOID TestStart(
     //TestDebugObject();
     //TestMailslot();
     //TestPartition();
-    //TestPrivateNamespace();
+    TestPrivateNamespace();
     //TestIoCompletion();
     //TestTimer();
     //TestTransaction();

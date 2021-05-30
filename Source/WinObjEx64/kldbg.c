@@ -3413,7 +3413,7 @@ BOOL kdLoadSymbolsForNtKernelImage(
     __try {
         _strcpy(szText, TEXT("Please wait while WinObjEx64 is loading symbols for "));
         _strcat(szText, ImageFileName);
-        hwndBanner = supDisplayLoadBanner(NULL, szText);
+        hwndBanner = supDisplayLoadBanner(NULL, szText, TRUE);
         SetCapture(hwndBanner);
         supSetWaitCursor(TRUE);
 #endif
@@ -4095,6 +4095,44 @@ BOOLEAN kdpOpenLoadDriverPublic(
 }
 
 /*
+* kdGetFieldOffsetFromSymbol
+*
+* Purpose:
+*
+* Get field offset by it name of the ntoskrnl symbol and the offset.
+*
+*/
+BOOL kdGetFieldOffsetFromSymbol(
+    _In_ KLDBGCONTEXT* Context,
+    _In_ LPCWSTR SymbolName,
+    _In_ LPCWSTR FieldName,
+    _Out_ ULONG* Offset
+)
+{
+    BOOL bResult = FALSE;
+    PSYMCONTEXT symContext = (PSYMCONTEXT)Context->NtOsSymContext;
+
+    *Offset = 0;
+
+    //
+    // Verify context data.
+    //
+    if (Context->NtOsSymContext == NULL)
+        return FALSE;
+
+    if (symContext->ModuleBase == 0)
+        return FALSE;
+
+    *Offset = symContext->Parser.GetFieldOffset(
+        symContext,
+        SymbolName,
+        FieldName,
+        &bResult);
+
+    return bResult;
+}
+
+/*
 * kdGetAddressFromSymbol
 *
 * Purpose:
@@ -4160,6 +4198,39 @@ BOOL kdGetAddressFromSymbol(
     return bResult;
 }
 
+
+BOOL CALLBACK symCallbackProc(
+    _In_ HANDLE hProcess,
+    _In_ ULONG ActionCode,
+    _In_opt_ ULONG64 CallbackData,
+    _In_opt_ ULONG64 UserContext
+)
+{
+    PIMAGEHLP_CBA_EVENT pEvent;
+
+    UNREFERENCED_PARAMETER(hProcess);
+    UNREFERENCED_PARAMETER(UserContext);
+
+    switch (ActionCode) {
+
+    case CBA_EVENT:
+        if (CallbackData) {
+            pEvent = (PIMAGEHLP_CBA_EVENT)CallbackData;
+            if (pEvent->severity == sevInfo) {              
+                if (pEvent->desc[0] > 0x20 && pEvent->desc[0] < 0x7f) {
+                    supUpdateLoadBannerText(g_hwndBanner, pEvent->desc, TRUE);
+                }
+            }
+        }
+        break;
+
+    default:
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 /*
 * symInit
 *
@@ -4189,12 +4260,19 @@ BOOL symInit(
 
         if (PathFileExists(szFileName)) {
 
-            if (SymGlobalsInit(0,
+            if (SymGlobalsInit(
+                SYMOPT_DEFERRED_LOADS |
+                SYMOPT_SECURE |
+                SYMOPT_EXACT_SYMBOLS |
+                SYMOPT_DEBUG |
+                SYMOPT_FAIL_CRITICAL_ERRORS,
                 NULL,
                 szFileName,
                 NULL,
                 g_WinObj.szSystemDirectory,
-                g_WinObj.szTempDirectory))
+                g_WinObj.szTempDirectory,
+                (PSYMBOL_REGISTERED_CALLBACK64)symCallbackProc,
+                0))
             {
                 g_kdctx.NtOsSymContext = (PVOID)SymParserCreate();
             }
@@ -4203,6 +4281,26 @@ BOOL symInit(
     }
 
     return (g_kdctx.NtOsSymContext != NULL);
+}
+
+/*
+* symShutdown
+*
+* Purpose:
+*
+* Deallocate symbol parser context, called once.
+*
+*/
+VOID symShutdown()
+{
+    PSYMCONTEXT Context = (PSYMCONTEXT)g_kdctx.NtOsSymContext;
+
+    if (Context) {
+        if (Context->ModuleBase)
+            Context->Parser.UnloadModule(Context);
+    }
+
+    SymGlobalsFree();
 }
 
 /*
@@ -4398,6 +4496,7 @@ VOID kdShutdown(
     VOID
 )
 {
+
     //
     // Close device handle and make it invalid.
     //
@@ -4423,5 +4522,8 @@ VOID kdShutdown(
         g_kdctx.NtOsImageMap = NULL;
     }
 
-    SymGlobalsFree();
+    //
+    // Deallocate symbols context if present.
+    //
+    symShutdown();
 }

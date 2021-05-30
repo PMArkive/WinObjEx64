@@ -1393,7 +1393,6 @@ PSYMCONTEXT SymParserCreate(
         Context->Parser.GetFieldOffset = (SPGetFieldOffset)SymParserGetFieldOffset;
         Context->Parser.LoadModule = (SPLoadModule)SymParserLoadModule;
         Context->Parser.UnloadModule = (SPUnloadModule)SymParserUnloadModule;
-        Context->Parser.RegisterCallback = (SPRegisterCallback)SymParserRegisterCallback;
         Context->Parser.LookupAddressBySymbol = (SPLookupAddressBySymbol)SymParserLookupAddressBySymbol;
         Context->Parser.LookupSymbolByAddress = (SPLookupSymbolByAddress)SymParserLookupSymbolByAddress;
         Context->Parser.DumpSymbolInformation = (SPDumpSymbolInformation)SymParserDumpSymbolInformation;
@@ -1435,7 +1434,9 @@ BOOL SymGlobalsInit(
     _In_opt_ LPCWSTR lpDbgHelpPath,
     _In_opt_ LPCWSTR lpSymbolPath,
     _In_ LPCWSTR lpSystemPath,
-    _In_ LPCWSTR lpTempPath
+    _In_ LPCWSTR lpTempPath,
+    _In_opt_ PSYMBOL_REGISTERED_CALLBACK64 CallbackFunction,
+    _In_opt_ ULONG64 UserContext
 )
 {
     BOOL bResult = FALSE;
@@ -1543,6 +1544,15 @@ BOOL SymGlobalsInit(
             g_SymGlobals.ProcessHandle,
             g_SymGlobals.szSymbolsPath,
             FALSE);
+
+        if (bResult && CallbackFunction) {
+
+            g_SymGlobals.ApiSet.SymRegisterCallbackW64(
+                g_SymGlobals.ProcessHandle,
+                CallbackFunction,
+                UserContext);
+
+        }
 
     }
     else {

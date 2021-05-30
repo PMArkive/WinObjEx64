@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        19 May 2021
+*  DATE:        27 May 2021
 *
 *  Header file for kernel symbol names.
 *
@@ -25,3 +25,6 @@
 
 #define FIELD_EPROCESS_UniqueProcessId      L"UniqueProcessId
 #define FIELD_EPROCESS_ImageFileName        L"ImageFileName"
+
+#define KSYM_EPROCESS                       L"_EPROCESS"
+#define KSYM_CONTROL_AREA                   L"_CONTROL_AREA"

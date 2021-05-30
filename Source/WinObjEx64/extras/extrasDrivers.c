@@ -112,24 +112,23 @@ VOID DrvHandlePopupMenu(
             &Context->lvItemHit,
             &Context->lvColumnHit))
         {
-            uPos++;
-            InsertMenu(hMenu, uPos++, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+            InsertMenu(hMenu, ++uPos, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
         }
 
         if (Context->DialogMode == DDM_Normal) {
 
-            InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_DRVLIST_PROP, T_PROPERTIES);
-            InsertMenu(hMenu, uPos++, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+            InsertMenu(hMenu, ++uPos, MF_BYCOMMAND, ID_DRVLIST_PROP, T_PROPERTIES);
+            InsertMenu(hMenu, ++uPos, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
             if (kdConnectDriver()) {
-                InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_DRVLIST_DUMP, T_DUMPDRIVER);
+                InsertMenu(hMenu, ++uPos, MF_BYCOMMAND, ID_DRVLIST_DUMP, T_DUMPDRIVER);
             }
-            InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_JUMPTOFILE, T_JUMPTOFILE);
+            InsertMenu(hMenu, ++uPos, MF_BYCOMMAND, ID_JUMPTOFILE, T_JUMPTOFILE);
 
         }
 
-        InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_DRVLIST_SAVE, T_EXPORTTOFILE);
-        InsertMenu(hMenu, uPos++, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-        InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_DRVLIST_REFRESH, T_VIEW_REFRESH);
+        InsertMenu(hMenu, ++uPos, MF_BYCOMMAND, ID_DRVLIST_SAVE, T_EXPORTTOFILE);
+        InsertMenu(hMenu, ++uPos, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+        InsertMenu(hMenu, ++uPos, MF_BYCOMMAND, ID_DRVLIST_REFRESH, T_VIEW_REFRESH);
 
         TrackPopupMenu(hMenu,
             TPM_RIGHTBUTTON | TPM_LEFTALIGN,

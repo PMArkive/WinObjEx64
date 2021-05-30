@@ -303,7 +303,6 @@ typedef struct _SYMPARSER {
     SPGetArrayTypeId GetArrayTypeId;
     SPGetAddressOffset GetAddressOffset;
     SPGetChildrenCount GetChildrenCount;
-    SPRegisterCallback RegisterCallback;
     SPGetCallingConvertion GetCallingConvertion;
     SPDumpSymbolInformation DumpSymbolInformation;
     SPLookupAddressBySymbol LookupAddressBySymbol;
@@ -323,7 +322,9 @@ BOOL SymGlobalsInit(
     _In_opt_ LPCWSTR lpDbgHelpPath,
     _In_opt_ LPCWSTR lpSymbolPath,
     _In_ LPCWSTR lpSystemPath,
-    _In_ LPCWSTR lpTempPath);
+    _In_ LPCWSTR lpTempPath,
+    _In_opt_ PSYMBOL_REGISTERED_CALLBACK64 CallbackFunction,
+    _In_opt_ ULONG64 UserContext);
 
 BOOL SymGlobalsFree();
 

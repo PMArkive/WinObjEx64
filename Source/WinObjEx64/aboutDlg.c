@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        19 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -80,7 +80,7 @@ VOID AboutDialogInit(
 
     if (hImage) {
 
-        SendMessage(GetDlgItem(hwndDlg, ID_ABOUT_ICON),
+        SendDlgItemMessage(hwndDlg, ID_ABOUT_ICON,
             STM_SETIMAGE, IMAGE_ICON, (LPARAM)hImage);
 
         SetProp(hwndDlg, T_ABOUTDLG_ICON_PROP, hImage);
@@ -533,6 +533,9 @@ VOID AboutDialogCollectGlobals(
     AddParameterValue32Hex(hwndOutput, TEXT("NtOsSize"), g_kdctx.NtOsSize);//mapped image size
 
     AddParameterValue64Hex(hwndOutput, TEXT("NtOsSymContext"), (ULONG_PTR)g_kdctx.NtOsSymContext);
+    if (g_kdctx.NtOsSymContext) {
+        AddParameterValue64Hex(hwndOutput, TEXT("NtOsSymContext->ModuleBase"), ((PSYMCONTEXT)g_kdctx.NtOsSymContext)->ModuleBase);
+    }
 
     AddParameterValue64Hex(hwndOutput, TEXT("SystemRangeStart"), (ULONG_PTR)g_kdctx.SystemRangeStart);
     AddParameterValue64Hex(hwndOutput, TEXT("MinimumUserModeAddress"), (ULONG_PTR)g_kdctx.MinimumUserModeAddress);

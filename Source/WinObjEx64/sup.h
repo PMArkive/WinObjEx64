@@ -29,6 +29,11 @@
 
 #define INITIAL_BUFFER_SIZE (256) * (1024)
 
+//
+// Defined in sup.c
+//
+extern HWND g_hwndBanner;
+
 typedef struct _SAPIDB {
     LIST_ENTRY ListHead;
     HANDLE     sapiHeap;
@@ -264,11 +269,13 @@ VOID supSetWaitCursor(
 
 VOID supUpdateLoadBannerText(
     _In_ HWND hwndBanner,
-    _In_ LPCWSTR lpText);
+    _In_ LPCWSTR lpText,
+    _In_ BOOL UseList);
 
 HWND supDisplayLoadBanner(
     _In_opt_ HWND hwndParent,
-    _In_ LPWSTR lpMessage);
+    _In_ LPWSTR lpMessage,
+    _In_ BOOL UseList);
 
 HIMAGELIST supLoadImageList(
     _In_ HINSTANCE hInst,

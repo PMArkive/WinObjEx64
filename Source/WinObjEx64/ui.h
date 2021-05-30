@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        17 May 2021
+*  DATE:        27 May 2021
 *
 *  Common header file for the user interface.
 *
@@ -75,7 +75,6 @@ typedef HWND(WINAPI *pfnHtmlHelpW)(
 #define T_JUMPTOFILE            L"Jump to File"
 #define T_DUMPDRIVER            L"Dump Driver"
 #define T_VIEW_REFRESH          L"Refresh\tF5"
-#define T_RESCAN                L"Rescan"
 #define T_VIEW_PLUGINS          L"View Plugins"
 #define T_EMPTY                 L" "
 #define T_MSG_SETTINGS_CHANGE   L"wobjSettingsChange"

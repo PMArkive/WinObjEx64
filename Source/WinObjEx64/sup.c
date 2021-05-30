@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        19 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -32,6 +32,8 @@ SCMDB g_scmDB;
 // Types collection.
 //
 POBJECT_TYPES_INFORMATION g_pObjectTypesInfo = NULL;
+
+HWND g_hwndBanner = NULL;
 
 //#define _PROFILE_MEMORY_USAGE_
 
@@ -743,6 +745,11 @@ VOID supSetWaitCursor(
     SetCursor(LoadCursor(NULL, fSet ? IDC_WAIT : IDC_ARROW));
 }
 
+typedef struct _SUP_BANNER_DATA {
+    LPWSTR lpText;
+    BOOL fList;
+} SUP_BANNER_DATA, * PSUP_BANNER_DATA;
+
 /*
 * supxLoadBannerDialog
 *
@@ -758,15 +765,25 @@ INT_PTR CALLBACK supxLoadBannerDialog(
     _In_ LPARAM lParam
 )
 {
+    SUP_BANNER_DATA *pvData;
     UNREFERENCED_PARAMETER(wParam);
 
     switch (uMsg) {
 
     case WM_INITDIALOG:
-        supCenterWindowPerScreen(hwndDlg);
-
         if (lParam) {
-            SetDlgItemText(hwndDlg, IDC_LOADING_MSG, (LPWSTR)lParam);
+            pvData = (SUP_BANNER_DATA*)lParam;
+
+            if (pvData->fList) {
+                SendDlgItemMessage(hwndDlg, IDC_LOADING_MSG, EM_SETLIMITTEXT, 0, 0);
+                supCenterWindowPerScreen(hwndDlg);
+                SendDlgItemMessage(hwndDlg, IDC_LOADING_MSG, EM_REPLACESEL, (WPARAM)0, (LPARAM)pvData->lpText);
+            }
+            else {
+                supCenterWindow(hwndDlg);
+                SetDlgItemText(hwndDlg, IDC_LOADING_MSG, (LPWSTR)pvData->lpText);
+            }
+
         }
         break;
 
@@ -790,10 +807,17 @@ INT_PTR CALLBACK supxLoadBannerDialog(
 */
 VOID supUpdateLoadBannerText(
     _In_ HWND hwndBanner,
-    _In_ LPCWSTR lpText
+    _In_ LPCWSTR lpText,
+    _In_ BOOL UseList
 )
 {
-    SetDlgItemText(hwndBanner, IDC_LOADING_MSG, lpText);
+    if (UseList) {
+        SendDlgItemMessage(hwndBanner, IDC_LOADING_MSG, EM_REPLACESEL, (WPARAM)0, (LPARAM)lpText);
+        SendDlgItemMessage(hwndBanner, IDC_LOADING_MSG, EM_REPLACESEL, (WPARAM)0, (LPARAM)(LPWSTR)L"\r\n");
+    }
+    else {
+        SetDlgItemText(hwndBanner, IDC_LOADING_MSG, lpText);
+    }
 }
 
 /*
@@ -806,15 +830,23 @@ VOID supUpdateLoadBannerText(
 */
 HWND supDisplayLoadBanner(
     _In_opt_ HWND hwndParent,
-    _In_ LPWSTR lpMessage
+    _In_ LPWSTR lpMessage,
+    _In_ BOOL UseList
 )
 {
-    return CreateDialogParam(
+    SUP_BANNER_DATA bannerData;
+
+    bannerData.fList = UseList;
+    bannerData.lpText = lpMessage;
+
+    g_hwndBanner = CreateDialogParam(
         g_WinObj.hInstance,
-        MAKEINTRESOURCE(IDD_DIALOG_LOAD),
+        UseList ? MAKEINTRESOURCE(IDD_DIALOG_LOADLIST) : MAKEINTRESOURCE(IDD_DIALOG_LOAD),
         hwndParent,
         supxLoadBannerDialog,
-        (LPARAM)lpMessage);
+        (LPARAM)&bannerData);
+
+    return g_hwndBanner;
 }
 
 /*
@@ -6501,7 +6533,8 @@ BOOLEAN supLoadIconForObjectType(
 
     if (hIcon) {
 
-        SendMessage(GetDlgItem(hwndDlg, ID_OBJECT_ICON), STM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
+        SendDlgItemMessage(hwndDlg, ID_OBJECT_ICON,
+            STM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
 
         if (IsShadow)
             Context->ObjectTypeIcon = hIcon;
@@ -7689,9 +7722,11 @@ VOID supObDumpShowError(
         ChildWndData.nCmdShow = SW_HIDE;
         EnumChildWindows(hwndDlg, supCallbackShowChildWindow, (LPARAM)&ChildWndData);
     }
+
     if (lpMessageText) {
-        SetWindowText(GetDlgItem(hwndDlg, ID_OBJECTDUMPERROR), lpMessageText);
+        SetDlgItemText(hwndDlg, ID_OBJECTDUMPERROR, lpMessageText);
     }
+
     ShowWindow(GetDlgItem(hwndDlg, ID_OBJECTDUMPERROR), SW_SHOW);
 }
 

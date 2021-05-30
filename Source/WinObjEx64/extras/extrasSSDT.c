@@ -128,14 +128,13 @@ VOID SdtHandlePopupMenu(
             &Context->lvItemHit,
             &Context->lvColumnHit))
         {
-            uPos++;
-            InsertMenu(hMenu, uPos++, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+            InsertMenu(hMenu, ++uPos, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
         }
 
         InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_JUMPTOFILE, T_JUMPTOFILE);
         InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_SDTLIST_SAVE, T_EXPORTTOFILE);
         InsertMenu(hMenu, uPos++, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-        InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_VIEW_REFRESH, T_RESCAN);
+        InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_VIEW_REFRESH, T_VIEW_REFRESH);
 
         TrackPopupMenu(hMenu,
             TPM_RIGHTBUTTON | TPM_LEFTALIGN,
@@ -1624,8 +1623,10 @@ VOID SdtListCreate(
 #ifndef _DEBUG
     HWND hwndBanner;
 
-    hwndBanner = supDisplayLoadBanner(hwndDlg,
-        TEXT("Loading service table dump, please wait"));
+    hwndBanner = supDisplayLoadBanner(
+        hwndDlg,
+        TEXT("Loading service table dump, please wait"),
+        FALSE);
 #endif
 
     supStatusBarSetText(pDlgContext->StatusBar, 1, TEXT("Initializing table view"));

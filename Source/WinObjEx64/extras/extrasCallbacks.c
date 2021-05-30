@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -4059,8 +4059,10 @@ VOID CallbackDialogContentRefresh(
 )
 {
 #ifndef _DEBUG
-    HWND hwndBanner = supDisplayLoadBanner(hwndDlg,
-        TEXT("Processing callbacks list, please wait"));
+    HWND hwndBanner = supDisplayLoadBanner(
+        hwndDlg,
+        TEXT("Processing callbacks list, please wait"),
+        FALSE);
 #endif
 
     __try {

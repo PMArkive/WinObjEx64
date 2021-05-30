@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        11 May 2021
+*  DATE:        27 May 2021
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -4191,8 +4191,10 @@ INT_PTR ObjectDumpInitDialog(
     PROP_OBJECT_INFO* Context = NULL;
     PROPSHEETPAGE* pSheet = (PROPSHEETPAGE*)lParam;
 #ifndef _DEBUG
-    HWND hwndBanner = supDisplayLoadBanner(hwndDlg,
-        TEXT("Processing object dump, please wait"));
+    HWND hwndBanner = supDisplayLoadBanner(
+        hwndDlg,
+        TEXT("Processing object dump, please wait"),
+        FALSE);
 #endif
     __try {
         Context = (PROP_OBJECT_INFO*)pSheet->lParam;

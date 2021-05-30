@@ -4,9 +4,9 @@
 *
 *  TITLE:       EXTRASIPC.C
 *
-*  VERSION:     1.88
+*  VERSION:     1.90
 *
-*  DATE:        12 Dec 2020
+*  DATE:        27 May 2021
 *
 *  IPC supported: Pipes, Mailslots
 *
@@ -405,7 +405,10 @@ INT_PTR CALLBACK IpcTypeDialogProc(
                         0,
                         ILD_NORMAL | ILD_TRANSPARENT);
                     if (hIcon) {
-                        SendMessage(GetDlgItem(hwndDlg, ID_OBJECT_ICON), STM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
+
+                        SendDlgItemMessage(hwndDlg, ID_OBJECT_ICON,
+                            STM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
+
                         pDlgContext->ObjectIcon = hIcon;
                     }
 
@@ -781,9 +784,10 @@ VOID IpcDlgHandlePopupMenu(
             &Context->lvItemHit,
             &Context->lvColumnHit))
         {
-            InsertMenu(hMenu, uPos++, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-            InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_IPCLIST_REFRESH, T_VIEW_REFRESH);
+            InsertMenu(hMenu, ++uPos, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
         }
+
+        InsertMenu(hMenu, uPos++, MF_BYCOMMAND, ID_IPCLIST_REFRESH, T_VIEW_REFRESH);
 
         TrackPopupMenu(hMenu,
             TPM_RIGHTBUTTON | TPM_LEFTALIGN,
@@ -868,7 +872,7 @@ INT_PTR CALLBACK IpcDlgProc(
 
                 supListViewEnableRedraw(pDlgContext->ListView, FALSE);
 
-                IpcDlgQueryInfo(pDlgContext->DialogMode, TRUE, pDlgContext->ListView);
+                IpcDlgQueryInfo((IPC_DIALOG_MODE)pDlgContext->DialogMode, TRUE, pDlgContext->ListView);
 
                 supListViewEnableRedraw(pDlgContext->ListView, TRUE);
 
@@ -990,7 +994,7 @@ VOID extrasCreateIpcDialog(
         _strcpy(lpObjectRelativePath, TEXT("Relative Path ( "));
         _strcat(lpObjectRelativePath, lpObjectsRoot);
         _strcat(lpObjectRelativePath, TEXT(" )"));
-        SetWindowText(GetDlgItem(hwndDlg, ID_IPCROOT), lpObjectRelativePath);
+        SetDlgItemText(hwndDlg, ID_IPCROOT, lpObjectRelativePath);
         supHeapFree(lpObjectRelativePath);
     }
     else
@@ -1038,7 +1042,7 @@ VOID extrasCreateIpcDialog(
 
         supListViewEnableRedraw(pDlgContext->ListView, FALSE);
 
-        IpcDlgQueryInfo(pDlgContext->DialogMode, FALSE, pDlgContext->ListView);
+        IpcDlgQueryInfo((IPC_DIALOG_MODE)pDlgContext->DialogMode, FALSE, pDlgContext->ListView);
 
         supListViewEnableRedraw(pDlgContext->ListView, TRUE);
     }
