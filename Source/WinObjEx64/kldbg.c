@@ -4,9 +4,9 @@
 *
 *  TITLE:       KLDBG.C, based on KDSubmarine by Evilcry
 *
-*  VERSION:     1.90
+*  VERSION:     1.91
 *
-*  DATE:        05 June 2021
+*  DATE:        26 June 2021
 *
 *  MINIMUM SUPPORTED OS WINDOWS 7
 *
@@ -1210,6 +1210,7 @@ PVOID ObDumpSymbolicLinkObjectVersionAware(
     case NT_WIN10_19H2:
     case NT_WIN10_20H1:
     case NT_WIN10_20H2:
+    case NT_WIN10_21H1:
         objectSize = sizeof(OBJECT_SYMBOLIC_LINK_V4);
         objectVersion = 4;
         break;
@@ -3849,15 +3850,27 @@ BOOLEAN kdQueryMmUnloadedDrivers(
                 if ((SectionBase == 0) || (SectionSize == 0))
                     break;
 
-                if (g_NtBuildNumber == NT_WIN10_THRESHOLD1)
-                    MiRememberUnloadedDriverPattern[0] = FIX_WIN10_THRESHOULD_REG;
-                else if (g_NtBuildNumber > NT_WIN10_20H1)
-                    MiRememberUnloadedDriverPattern[0] = FIX_WIN10_20H1_REG;
+                if (g_NtBuildNumber > NT_WIN10_21H1) {
 
-                ptrCode = (PBYTE)supFindPattern((PBYTE)SectionBase,
-                    SectionSize,
-                    MiRememberUnloadedDriverPattern,
-                    sizeof(MiRememberUnloadedDriverPattern));
+                    //
+                    // Fixme
+                    //
+                    ptrCode = NULL;
+
+                }
+                else {
+
+                    if (g_NtBuildNumber == NT_WIN10_THRESHOLD1)
+                        MiRememberUnloadedDriverPattern[0] = FIX_WIN10_THRESHOULD_REG;
+                    else if (g_NtBuildNumber > NT_WIN10_20H1)
+                        MiRememberUnloadedDriverPattern[0] = FIX_WIN10_20H1_REG;
+
+                    ptrCode = (PBYTE)supFindPattern((PBYTE)SectionBase,
+                        SectionSize,
+                        MiRememberUnloadedDriverPattern,
+                        sizeof(MiRememberUnloadedDriverPattern));
+
+                }
 
                 if (ptrCode == NULL)
                     break;
@@ -4322,6 +4335,75 @@ BOOL kdGetFieldOffsetFromSymbol(
 }
 
 /*
+* kdGetAddressFromSymbolEx
+*
+* Purpose:
+*
+* Get fully adjusted address for symbol by it name.
+*
+*/
+BOOL kdGetAddressFromSymbolEx(
+    _In_ PSYMCONTEXT SymContext,
+    _In_ LPCWSTR SymbolName,
+    _In_ PVOID ImageBase,
+    _In_ ULONG_PTR ImageSize,
+    _Inout_ ULONG_PTR* Address
+)
+{
+    BOOL bResult = FALSE;
+    ULONG_PTR address;
+
+    *Address = 0;
+
+    //
+    // Verify context data.
+    //
+    if (ImageBase == NULL || ImageSize == 0)
+    {
+        return FALSE;
+    }
+
+    __try {
+
+        address = SymContext->Parser.LookupAddressBySymbol(
+            SymContext,
+            SymbolName,
+            &bResult);
+
+    }
+    __except (WOBJ_EXCEPTION_FILTER_LOG) {
+        return FALSE;
+    }
+
+    if (bResult && address) {
+
+        //
+        // Adjust address to image base. 
+        //
+        address = (ULONG_PTR)ImageBase + address - SymContext->ModuleBase;
+
+        //
+        // Validate resulting address value.
+        //
+        if (IN_REGION(address,
+            ImageBase,
+            ImageSize))
+        {
+            *Address = address;
+        }
+        else {
+            //
+            // This is bogus address not in ntoskrnl range, bail out.
+            //
+            bResult = FALSE;
+        }
+
+    }
+
+    return bResult;
+}
+
+/*
 * kdGetAddressFromSymbol
 *
 * Purpose:
@@ -4336,7 +4418,7 @@ BOOL kdGetAddressFromSymbol(
 )
 {
     BOOL bResult = FALSE;
-    ULONG_PTR address;
+    ULONG_PTR address = 0;
     PSYMCONTEXT symContext = (PSYMCONTEXT)Context->NtOsSymContext;
 
     WCHAR szLog[WOBJ_MAX_MESSAGE - 1];
@@ -4352,46 +4434,15 @@ BOOL kdGetAddressFromSymbol(
 
     *Address = 0;
 
-    //
-    // Verify context data.
-    //
-    if (Context->NtOsBase == NULL ||
-        Context->NtOsSize == 0)
-    {
-        return FALSE;
-    }
+    bResult = kdGetAddressFromSymbolEx(symContext,
+        SymbolName,
+        Context->NtOsBase,
+        Context->NtOsSize,
+        &address);
 
-    __try {
+    if (bResult) {
 
-        address = symContext->Parser.LookupAddressBySymbol(
-            symContext,
-            SymbolName,
-            &bResult);
-
-    }
-    __except (WOBJ_EXCEPTION_FILTER_LOG) {
-        return FALSE;
-    }
-
-    if (bResult && address) {
-
-        //
-        // Adjust address to ntoskrnl base. 
-        //
-        address = (ULONG_PTR)Context->NtOsBase + address - symContext->ModuleBase;
-
-        //
-        // Validate resulting address value.
-        //
-        if (kdAddressInNtOsImage((PVOID)address)) {
-            *Address = address;
-        }
-        else {
-            //
-            // This is bogus address not in ntoskrnl range, bail out.
-            //
-            bResult = FALSE;
-        }
+        *Address = address;
 
     }
 
@@ -4404,7 +4455,6 @@ BOOL kdGetAddressFromSymbol(
         address);
 
     logAdd(WOBJ_LOG_ENTRY_INFORMATION, szLog);
-
 
     return bResult;
 }

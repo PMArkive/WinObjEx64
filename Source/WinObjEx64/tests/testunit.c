@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        29 May 2021
+*  DATE:        25 June 2021
 *
 *  Test code used while debug.
 *
@@ -20,7 +20,10 @@
 
 #include "global.h"
 #include "ntos\ntldr.h"
+#pragma warning(push)
+#pragma warning(disable:28251) //Inconsistent annotation for any intrin, "feature" of the latest MSVC
 #include <intrin.h>
+#pragma warning(pop)
 #include <aclapi.h>
 
 HANDLE g_TestIoCompletion = NULL, g_TestTransaction = NULL;

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.90
 *
-*  DATE:        07 June 2021
+*  DATE:        26 June 2021
 *
 *  Common header file for the Kernel Debugger Driver support.
 *
@@ -254,8 +254,8 @@ typedef struct _OBJREF {
 // Windows 10 21H1
 #define NT_WIN10_21H1           19043
 
-// Windows 10 Active Develepment Branch (21XX)
-#define NTX_WIN10_ADB           21382
+// Windows 11 Active Develepment Branch (21XX)
+#define NTX_WIN11_ADB           22000
 
 //
 // Defines for boundary descriptors
@@ -515,6 +515,13 @@ BOOL kdGetFieldOffsetFromSymbol(
 BOOL kdGetAddressFromSymbol(
     _In_ KLDBGCONTEXT* Context,
     _In_ LPCWSTR SymbolName,
+    _Inout_ ULONG_PTR* Address);
+
+BOOL kdGetAddressFromSymbolEx(
+    _In_ PSYMCONTEXT SymContext,
+    _In_ LPCWSTR SymbolName,
+    _In_ PVOID ImageBase,
+    _In_ ULONG_PTR ImageSize,
     _Inout_ ULONG_PTR* Address);
 
 /*
