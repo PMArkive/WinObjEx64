@@ -4,9 +4,9 @@
 *
 *  TITLE:       KLDBG.H
 *
-*  VERSION:     1.90
+*  VERSION:     1.91
 *
-*  DATE:        26 June 2021
+*  DATE:        27 June 2021
 *
 *  Common header file for the Kernel Debugger Driver support.
 *
@@ -443,16 +443,13 @@ BOOL kdFindKiServiceTable(
     _In_ ULONG_PTR KernelImageBase,
     _Inout_ KSERVICE_TABLE_DESCRIPTOR* ServiceTable);
 
-ULONG_PTR kdQueryWin32kApiSetTable(
-    _In_ HMODULE hWin32k);
-
 BOOL kdpReadSystemMemoryEx(
     _In_ ULONG_PTR Address,
     _Inout_ PVOID Buffer,
     _In_ ULONG BufferSize,
     _Out_opt_ PULONG NumberOfBytesRead);
 
-BOOL kdLoadSymbolsForNtKernelImage(
+BOOL kdLoadSymbolsForNtImage(
     _In_ PSYMCONTEXT SymContext,
     _In_ LPCWSTR ImageFileName);
 
@@ -504,7 +501,7 @@ BOOLEAN kdQueryMmUnloadedDrivers(
     _Out_ PVOID* UnloadedDrivers);
 
 BOOLEAN kdIsSymAvailable(
-    _In_ KLDBGCONTEXT* Context);
+    _In_opt_ SYMCONTEXT* SymContext);
 
 BOOL kdGetFieldOffsetFromSymbol(
     _In_ KLDBGCONTEXT* Context,

@@ -58,6 +58,8 @@
 
 #define KVAR_ExpHostList                            L"ExpHostList"
 
+#define KVAR_Win32kApiSetTable                      L"Win32kApiSetTable"
+
 #define KFLD_UniqueProcessId                        L"UniqueProcessId"
 #define KFLD_ImageFileName                          L"ImageFileName"
 

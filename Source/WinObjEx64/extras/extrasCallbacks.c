@@ -569,7 +569,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindCiCallbacks)
         //
         // Symbols query.
         //
-        if (kdIsSymAvailable(&g_kdctx)) {
+        if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
             if (g_NtBuildNumber < NT_WIN8_RTM) {
 
@@ -775,7 +775,7 @@ BOOL FindIopFileSystemQueueHeads(
     *IopTapeFileSystemQueueHead = 0;
     *IopNetworkFileSystemQueueHead = 0;
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         do {
 
@@ -977,7 +977,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindIopFsNotifyChangeQueueHead)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_IopFsNotifyChangeQueueHead,
@@ -1057,7 +1057,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindRtlpDebugPrintCallbackList)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_RtlpDebugPrintCallbackList,
@@ -1174,7 +1174,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindPopRegisteredPowerSettingCallbacks)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_PopRegisteredPowerSettingCallbacks,
@@ -1256,7 +1256,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindSeFileSystemNotifyRoutinesHead)
     ULONG_PTR NtOsBase = (ULONG_PTR)g_kdctx.NtOsBase;
     HMODULE hNtOs = (HINSTANCE)g_kdctx.NtOsImageMap;
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         if (Extended)
             lpVarName = KVAR_SeFileSystemNotifyRoutinesExHead;
@@ -1450,7 +1450,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindIopNotifyShutdownQueueHeadHead)
     ULONG_PTR NtOsBase = (ULONG_PTR)g_kdctx.NtOsBase;
     HMODULE hNtOs = (HINSTANCE)g_kdctx.NtOsImageMap;
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         if (bLastChance)
             lpVarName = KVAR_IopNotifyLastChanceShutdownQueueHead;
@@ -1539,7 +1539,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindCmCallbackHead)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_CallbackListHead,
@@ -1635,7 +1635,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindKeBugCheckReasonCallbackHead)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_KeBugCheckReasonCallbackListHead,
@@ -1710,7 +1710,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindKeBugCheckCallbackHead)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_KeBugCheckCallbackListHead,
@@ -1786,7 +1786,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindPspLoadImageNotifyRoutine)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_PspLoadImageNotifyRoutine,
@@ -1862,7 +1862,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindPspCreateThreadNotifyRoutine)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_PspCreateThreadNotifyRoutine,
@@ -1936,7 +1936,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindDbgkLmdCallbacks)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_DbgkLmdCallbacks,
@@ -2019,7 +2019,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindPspCreateProcessNotifyRoutine)
     ULONG_PTR NtOsBase = (ULONG_PTR)g_kdctx.NtOsBase;
     HMODULE hNtOs = (HMODULE)g_kdctx.NtOsImageMap;
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_PspCreateProcessNotifyRoutine,
@@ -2121,7 +2121,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindPsAltSystemCallHandlers)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_PsAltSystemCallHandlers,
@@ -2199,7 +2199,7 @@ OBEX_FINDCALLBACK_ROUTINE(FindExHostCallbacks)
 
     UNREFERENCED_PARAMETER(QueryFlags);
 
-    if (kdIsSymAvailable(&g_kdctx)) {
+    if (kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext)) {
 
         kdGetAddressFromSymbol(&g_kdctx,
             KVAR_ExpHostList,

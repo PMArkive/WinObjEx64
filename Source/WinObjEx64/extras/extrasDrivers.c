@@ -396,6 +396,8 @@ VOID DrvListUnloadedDrivers(
     if (!kdQueryMmUnloadedDrivers(&g_kdctx,
         (PVOID*)&pvDrivers))
     {
+        _strcpy(szBuffer, TEXT("Could not resolve MmUnloadedDrivers"));
+        supStatusBarSetText(Context->StatusBar, 1, (LPWSTR)&szBuffer);
         return;
     }
 

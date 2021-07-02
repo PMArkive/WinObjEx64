@@ -4,9 +4,9 @@
 *
 *  TITLE:       TESTUNIT.C
 *
-*  VERSION:     1.90
+*  VERSION:     1.91
 *
-*  DATE:        25 June 2021
+*  DATE:        27 June 2021
 *
 *  Test code used while debug.
 *
@@ -977,7 +977,7 @@ VOID TestSymbols()
     WCHAR* pStrEnd;
     WCHAR* pOutput; 
 
-    if (!kdIsSymAvailable(&g_kdctx))
+    if (!kdIsSymAvailable((PSYMCONTEXT)g_kdctx.NtOsSymContext))
         return;
 
     pOutput = (WCHAR*)supHeapAlloc(4 * MAX_SYM_NAME);
