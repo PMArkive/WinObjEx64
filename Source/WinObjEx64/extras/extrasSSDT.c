@@ -129,7 +129,7 @@ ULONG_PTR SdtQueryWin32kApiSetTable(
     _In_ ULONG_PTR ImageSize
 )
 {
-    PBYTE	    ptrCode = (PBYTE)hModule;
+    PBYTE       ptrCode = (PBYTE)hModule;
 
     PVOID       SectionBase;
     ULONG       SectionSize = 0, Index;
