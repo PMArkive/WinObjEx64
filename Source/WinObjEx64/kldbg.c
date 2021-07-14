@@ -4254,6 +4254,17 @@ BOOL kdGetAddressFromSymbolEx(
     BOOL bResult = FALSE;
     ULONG_PTR address;
 
+    WCHAR szLog[WOBJ_MAX_MESSAGE - 1];
+
+    szLog[0] = 0;
+    RtlStringCchPrintfSecure(szLog,
+        RTL_NUMBER_OF(szLog),
+        TEXT("%ws: Retrieving address for symbol \"%ws\""),
+        __FUNCTIONW__,
+        SymbolName);
+
+    logAdd(WOBJ_LOG_ENTRY_INFORMATION, szLog);
+
     *Address = 0;
 
     //
@@ -4301,6 +4312,16 @@ BOOL kdGetAddressFromSymbolEx(
 
     }
 
+    szLog[0] = 0;
+    RtlStringCchPrintfSecure(szLog,
+        RTL_NUMBER_OF(szLog),
+        TEXT("%ws: Result %lu, address 0x%llX"),
+        __FUNCTIONW__,
+        bResult,
+        address);
+
+    logAdd(WOBJ_LOG_ENTRY_INFORMATION, szLog);
+
     return bResult;
 }
 
@@ -4322,17 +4343,6 @@ BOOL kdGetAddressFromSymbol(
     ULONG_PTR address = 0;
     PSYMCONTEXT symContext = (PSYMCONTEXT)Context->NtOsSymContext;
 
-    WCHAR szLog[WOBJ_MAX_MESSAGE - 1];
-
-    szLog[0] = 0;
-    RtlStringCchPrintfSecure(szLog,
-        RTL_NUMBER_OF(szLog),
-        TEXT("%ws: Retrieving address for symbol \"%ws\""),
-        __FUNCTIONW__,
-        SymbolName);
-
-    logAdd(WOBJ_LOG_ENTRY_INFORMATION, szLog);
-
     *Address = 0;
 
     bResult = kdGetAddressFromSymbolEx(symContext,
@@ -4346,16 +4356,6 @@ BOOL kdGetAddressFromSymbol(
         *Address = address;
 
     }
-
-    szLog[0] = 0;
-    RtlStringCchPrintfSecure(szLog,
-        RTL_NUMBER_OF(szLog),
-        TEXT("%ws: Result %lu, address 0x%llX"),
-        __FUNCTIONW__,
-        bResult,
-        address);
-
-    logAdd(WOBJ_LOG_ENTRY_INFORMATION, szLog);
 
     return bResult;
 }

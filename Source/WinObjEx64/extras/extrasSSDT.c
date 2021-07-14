@@ -141,12 +141,14 @@ ULONG_PTR SdtQueryWin32kApiSetTable(
 
     if (kdIsSymAvailable(W32SymContext)) {
 
-        kdGetAddressFromSymbolEx(W32SymContext,
+        if (kdGetAddressFromSymbolEx(W32SymContext,
             KVAR_Win32kApiSetTable,
             ImageBase,
             ImageSize,
-            &tableAddress);
-
+            &tableAddress)) 
+        {
+            tableAddress = tableAddress - (ULONG_PTR)ImageBase + (ULONG_PTR)hModule;
+        }
     }
 
     if (tableAddress == 0) {

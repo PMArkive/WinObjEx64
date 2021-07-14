@@ -43,6 +43,7 @@
 #define DEFAULT_DLL         L"DbgHelp.dll"
 
 typedef struct _SYMGLOBALS {
+    BOOL Initialized;
     ULONG Options;
     HANDLE ProcessHandle;
     HMODULE DllHandle;
@@ -1368,7 +1369,12 @@ PSYMCONTEXT SymParserCreate(
     VOID
 )
 {
-    PSYMCONTEXT Context = (PSYMCONTEXT)supHeapAlloc(sizeof(SYMCONTEXT));
+    PSYMCONTEXT Context;
+    
+    if (g_SymGlobals.Initialized == FALSE)
+        return NULL;
+
+    Context = (PSYMCONTEXT)supHeapAlloc(sizeof(SYMCONTEXT));
     if (Context) {
 
         RtlCopyMemory(&Context->DbgHelp, &g_SymGlobals.ApiSet, sizeof(DBGHELP_PTRS));
@@ -1446,6 +1452,8 @@ BOOL SymGlobalsInit(
     LPWSTR locaDbgHelplPath = NULL;
     SIZE_T nLen;
     WCHAR szWinPath[MAX_PATH + 1];
+
+    RtlSecureZeroMemory(&g_SymGlobals, sizeof(g_SymGlobals));
 
     //
     // Validate symbols path input length.
@@ -1565,7 +1573,9 @@ BOOL SymGlobalsInit(
         FreeLibrary(hDbg);
         g_SymGlobals.DllHandle = NULL;
     }
-    
+
+    g_SymGlobals.Initialized = bResult;
+
     return bResult;
 }
 
