@@ -423,6 +423,7 @@
     <ClInclude Include="..\Shared\ntos\apisetx.h" />
     <ClInclude Include="..\Shared\ntos\halamd64.h" />
     <ClInclude Include="..\Shared\ntos\ntalpc.h" />
+    <ClInclude Include="..\Shared\ntos\ntbuilds.h" />
     <ClInclude Include="..\Shared\ntos\ntldr.h" />
     <ClInclude Include="..\Shared\ntos\ntos.h" />
     <ClInclude Include="..\Shared\ntos\ntsup.h" />
