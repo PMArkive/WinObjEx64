@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2018 - 2021
+*  (C) COPYRIGHT AUTHORS, 2018 - 2022
 *
 *  TITLE:       EXTRASCALLBACKS.C
 *
-*  VERSION:     1.92
+*  VERSION:     1.93
 *
-*  DATE:        05 Dec 2021
+*  DATE:        01 Apr 2022
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -873,6 +873,50 @@ OBEX_FINDCALLBACK_ROUTINE(FindCiCallbacks)
     return kvarAddress;
 }
 
+BOOL IopFileSystemIsValidPattern(
+    _In_ PBYTE Buffer,
+    _In_ ULONG Offset,
+    _In_ ULONG InstructionSize
+)
+{
+    BOOL bResult = FALSE;
+
+    if (g_NtBuildNumber <= NT_WIN11_21H2) {
+
+        //
+        // lea  rdx, xxx                
+        //
+        if ((Buffer[Offset] == 0x48) &&
+            (Buffer[Offset + 1] == 0x8D) &&
+            (Buffer[Offset + 2] == 0x0D) &&
+            ((Buffer[Offset + InstructionSize] == 0x48) || (Buffer[Offset + InstructionSize] == 0xE9)))
+        {
+            bResult = TRUE;
+        }
+
+    }
+    else { //win11 22h1+
+
+        //
+        // mov  rcx, xxx                
+        //
+        if ((Buffer[Offset] == 0x48) &&
+            (Buffer[Offset + 1] == 0x8B) &&
+            (Buffer[Offset + 2] == 0x0D) &&
+            (
+                (Buffer[Offset + InstructionSize] == 0x48) ||
+                (Buffer[Offset + InstructionSize] == 0xE9) ||
+                (Buffer[Offset + InstructionSize] == 0x8B))
+            )
+        {
+            bResult = TRUE;
+        }
+
+    }
+
+    return bResult;
+}
+
 /*
 * FindIopFileSystemQueueHeads
 *
@@ -1028,14 +1072,8 @@ BOOL FindIopFileSystemQueueHeads(
                 break;
 
             if (hs.len == 7) {
-                //
-                // lea  rdx, xxx                
-                //
-                if ((ptrCode[Index] == 0x48) &&
-                    (ptrCode[Index + 1] == 0x8D) &&
-                    (ptrCode[Index + 2] == 0x0D) &&
-                    ((ptrCode[Index + hs.len] == 0x48) || (ptrCode[Index + hs.len] == 0xE9)))
-                {
+
+                if (IopFileSystemIsValidPattern(ptrCode, Index, hs.len)) {
                     Rel = *(PLONG)(ptrCode + Index + 3);
                     if (Rel) {
 
