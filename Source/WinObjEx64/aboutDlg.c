@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.93
 *
-*  DATE:        24 Mar 2022
+*  DATE:        22 Apr 2022
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -512,21 +512,15 @@ VOID AboutDialogCollectGlobals(
     //
     // List g_kdctx.
     //
-    szBuffer[0] = L'0';
-    szBuffer[1] = L'x';
-    szBuffer[2] = 0;
-    ultohex(g_kdctx.DriverOpenLoadStatus, &szBuffer[2]);
-    if (g_kdctx.DriverOpenLoadStatus == STATUS_SUCCESS) {
-        _strcat(szBuffer, TEXT(" (reported as OK)"));
-    }
-
-    AddParameterValue(hwndOutput, TEXT("DriverOpenLoadStatus"), szBuffer);
-    AddParameterValue32Hex(hwndOutput, TEXT("DriverConnectStatus"), g_kdctx.DriverConnectStatus); //kdConnectDriver status
-    AddParameterValue64Hex(hwndOutput, TEXT("KLDBG DeviceHandle"), (ULONG_PTR)g_kdctx.DeviceHandle);
-
     AddParameterValueBool(hwndOutput, TEXT("IsFullAdmin"), g_kdctx.IsFullAdmin); //admin privileges available
     AddParameterValueBool(hwndOutput, TEXT("IsSecureBoot"), g_kdctx.IsSecureBoot); //secure boot enabled
-    AddParameterValueBool(hwndOutput, TEXT("IsOurLoad"), g_kdctx.IsOurLoad); //driver was loaded by our program instance
+
+    //
+    // Helper driver state.
+    //
+    AddParameterValue32Hex(hwndOutput, TEXT("DriverLoadStatus"), g_kdctx.DriverContext.LoadStatus);
+    AddParameterValue32Hex(hwndOutput, TEXT("DriverOpenStatus"), g_kdctx.DriverContext.OpenStatus);
+    AddParameterValueBool(hwndOutput, TEXT("IsOurLoad"), g_kdctx.DriverContext.IsOurLoad); //driver was loaded by our program instance
 
     AddParameterValue64Hex(hwndOutput, TEXT("DirectoryRootObject"), g_kdctx.DirectoryRootObject); //address of object root directory
     AddParameterValueUlong(hwndOutput, TEXT("DirectoryTypeIndex"), g_kdctx.DirectoryTypeIndex);

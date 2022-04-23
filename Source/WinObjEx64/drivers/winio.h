@@ -1,14 +1,14 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2020 - 2021
+*  (C) COPYRIGHT AUTHORS, 2022
 *
-*  TITLE:       DRVHELPER.H
+*  TITLE:       WINIO.H
 *
-*  VERSION:     1.90
+*  VERSION:     1.93
 *
-*  DATE:        11 May 2021
+*  DATE:        22 Apr 2022
 *
-*  Common header file for the Kernel Driver Helper support.
+*  Common header file for the WINIO Driver Helper support.
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -40,23 +40,8 @@ typedef struct _WINIO_PHYSICAL_MEMORY_INFO_EX {
     UCHAR EncryptedKey[16];
 } WINIO_PHYSICAL_MEMORY_INFO_EX, * PWINIO_PHYSICAL_MEMORY_INFO_EX;
 
-//
-// Prototype for read physical memory function.
-//
-typedef NTSTATUS(WINAPI* provReadPhysicalMemory)(
-    _In_ HANDLE DeviceHandle,
-    _In_ ULONG_PTR PhysicalAddress,
-    _In_ PVOID Buffer,
-    _In_ ULONG NumberOfBytes);
-
-//
-// Prototype for query PML4 value function.
-//
-typedef NTSTATUS(WINAPI* provQueryPML4)(
-    _In_ HANDLE DeviceHandle,
-    _Out_ ULONG_PTR* Value);
-
-BOOL WinIoReadSystemMemoryEx(
+BOOL WinIoReadSystemMemory(
+    _In_ WDRV_CONTEXT* Context,
     _In_ ULONG_PTR Address,
     _Inout_ PVOID Buffer,
     _In_ ULONG BufferSize,

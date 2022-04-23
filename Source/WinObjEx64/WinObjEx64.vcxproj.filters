@@ -46,6 +46,9 @@
     <Filter Include="Source Files\tests">
       <UniqueIdentifier>{495dbe60-1cd4-44e0-a57a-5820605391e9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\drivers">
+      <UniqueIdentifier>{da588ca3-321f-4491-adcb-55b1d888e133}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="aboutDlg.c">
@@ -55,9 +58,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="findDlg.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="instdrv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kldbg.c">
@@ -222,9 +222,6 @@
     <ClCompile Include="..\Shared\treelist\treelist.c">
       <Filter>treelist</Filter>
     </ClCompile>
-    <ClCompile Include="drvhelper.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="tinyaes\aes.c">
       <Filter>tinyaes</Filter>
     </ClCompile>
@@ -249,6 +246,15 @@
     <ClCompile Include="hash.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="drivers\wdrvprv.c">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\winio.c">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="drivers\wdbgdrv.c">
+      <Filter>Source Files\drivers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc">
@@ -266,9 +272,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="global.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="instdrv.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="kldbg.h">
@@ -409,9 +412,6 @@
     <ClInclude Include="winedebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="drvhelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\Shared\ntos\halamd64.h">
       <Filter>ntos</Filter>
     </ClInclude>
@@ -453,6 +453,15 @@
     </ClInclude>
     <ClInclude Include="..\Shared\ntuser\ntuser.h">
       <Filter>ntos</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\wdrvprv.h">
+      <Filter>Source Files\drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\winio.h">
+      <Filter>Source Files\drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="drivers\wdbgdrv.h">
+      <Filter>Source Files\drivers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

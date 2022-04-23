@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2015 - 2021
+*  (C) COPYRIGHT AUTHORS, 2015 - 2022
 *
 *  TITLE:       TESTUNIT.C
 *
-*  VERSION:     1.92
+*  VERSION:     1.93
 *
-*  DATE:        13 Nov 2021
+*  DATE:        22 Apr 2022
 *
 *  Test code used while debug.
 *
@@ -1119,10 +1119,21 @@ VOID TestCall()
 
 }
 
+VOID TestWdp()
+{
+    WDRV_CONTEXT context;
+
+    NTSTATUS ntStatus = WDrvProvCreate(wdrvMicrosoft, g_kdctx.Data->FirmwareType, &context);
+    if (NT_SUCCESS(ntStatus)) {
+        WDrvProvRelease(&context);
+    }
+}
+
 VOID TestStart(
     VOID
 )
 {
+    //TestWdp();
     TestCall();
     //TestSectionControlArea();
     //TestSymbols();

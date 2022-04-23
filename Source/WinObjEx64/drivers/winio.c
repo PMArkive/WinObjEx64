@@ -1,14 +1,14 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2020
+*  (C) COPYRIGHT AUTHORS, 2022
 *
-*  TITLE:       DRVHELPER.C
+*  TITLE:       WINIO.C
 *
-*  VERSION:     1.85
+*  VERSION:     1.93
 *
-*  DATE:        06 Mar 2020
-*
-*  WinIo based VM-through-PM reader, used only in private builds, WHQL.
+*  DATE:        22 Apr 2022
+* 
+*  WinIo based reader.
 *
 *  Note:
 *
@@ -23,81 +23,15 @@
 * PARTICULAR PURPOSE.
 *
 *******************************************************************************/
-
 #include "global.h"
 #include "ntos/halamd64.h"
-
-#define PHY_ADDRESS_MASK                0x000ffffffffff000ull
-#define PHY_ADDRESS_MASK_2MB_PAGES      0x000fffffffe00000ull
-#define VADDR_ADDRESS_MASK_2MB_PAGES    0x00000000001fffffull
-#define VADDR_ADDRESS_MASK_4KB_PAGES    0x0000000000000fffull
-#define ENTRY_PRESENT_BIT               1
-#define ENTRY_PAGE_SIZE_BIT             0x0000000000000080ull
-
+#include "winio.h"
 #include "tinyaes/aes.h"
 
 //
 // AES key used by EneTechIo latest variants.
 //
 ULONG g_EneTechIoUnlockKey[4] = { 0x54454E45, 0x4E484345, 0x474F4C4F, 0x434E4959 };
-
-
-int PwEntryToPhyAddr(ULONG_PTR entry, ULONG_PTR* phyaddr)
-{
-    if (entry & ENTRY_PRESENT_BIT) {
-        *phyaddr = entry & PHY_ADDRESS_MASK;
-        return 1;
-    }
-
-    return 0;
-}
-
-NTSTATUS PwVirtualToPhysical(
-    _In_ HANDLE DeviceHandle,
-    _In_ provQueryPML4 QueryPML4Routine,
-    _In_ provReadPhysicalMemory ReadPhysicalMemoryRoutine,
-    _In_ ULONG_PTR VirtualAddress,
-    _Out_ ULONG_PTR* PhysicalAddress)
-{
-    NTSTATUS    ntStatus;
-    ULONG_PTR   pml4_cr3, selector, table, entry = 0;
-    INT         r, shift;
-
-    ntStatus = QueryPML4Routine(DeviceHandle, &pml4_cr3);
-    if (!NT_SUCCESS(ntStatus))
-        return ntStatus;
-
-    table = pml4_cr3 & PHY_ADDRESS_MASK;
-
-    for (r = 0; r < 4; r++) {
-
-        shift = 39 - (r * 9);
-        selector = (VirtualAddress >> shift) & 0x1ff;
-
-        ntStatus = ReadPhysicalMemoryRoutine(DeviceHandle,
-            table + selector * 8,
-            &entry,
-            sizeof(ULONG_PTR));
-
-        if (!NT_SUCCESS(ntStatus))
-            return ntStatus;
-
-        if (PwEntryToPhyAddr(entry, &table) == 0)
-            return STATUS_INTERNAL_ERROR;
-
-        if ((r == 2) && ((entry & ENTRY_PAGE_SIZE_BIT) != 0)) {
-            table &= PHY_ADDRESS_MASK_2MB_PAGES;
-            table += VirtualAddress & VADDR_ADDRESS_MASK_2MB_PAGES;
-            *PhysicalAddress = table;
-            return STATUS_SUCCESS;
-        }
-    }
-
-    table += VirtualAddress & VADDR_ADDRESS_MASK_4KB_PAGES;
-    *PhysicalAddress = table;
-
-    return STATUS_SUCCESS;
-}
 
 /*
 * WinIoCallDriver
@@ -440,14 +374,15 @@ NTSTATUS WINAPI WinIoReadKernelVirtualMemory(
 }
 
 /*
-* WinIoReadSystemMemoryEx
+* WinIoReadSystemMemory
 *
 * Purpose:
 *
 * Read kernel virtual memory.
 *
 */
-BOOL WinIoReadSystemMemoryEx(
+BOOL WinIoReadSystemMemory(
+    _In_ WDRV_CONTEXT* Context,
     _In_ ULONG_PTR Address,
     _Inout_ PVOID Buffer,
     _In_ ULONG BufferSize,
@@ -455,47 +390,53 @@ BOOL WinIoReadSystemMemoryEx(
 )
 {
     BOOL bResult = FALSE;
-    IO_STATUS_BLOCK iost;
-    NTSTATUS ntStatus;
+    NTSTATUS ntStatus = STATUS_UNSUCCESSFUL;
     PVOID lockedBuffer = NULL;
 
     if (NumberOfBytesRead)
         *NumberOfBytesRead = 0;
 
-    if (Address < g_kdctx.SystemRangeStart)
-        return FALSE;
+    if (Address >= g_kdctx.SystemRangeStart) {
 
-    lockedBuffer = supVirtualAlloc(BufferSize);
-    if (lockedBuffer) {
+        lockedBuffer = supVirtualAlloc(BufferSize);
+        if (lockedBuffer) {
 
-        if (VirtualLock(lockedBuffer, BufferSize)) {
+            if (VirtualLock(lockedBuffer, BufferSize)) {
 
-            ntStatus = WinIoReadKernelVirtualMemory(g_kdctx.DeviceHandle,
-                Address,
-                lockedBuffer,
-                BufferSize);
+                ntStatus = WinIoReadKernelVirtualMemory(Context->DeviceHandle,
+                    Address,
+                    lockedBuffer,
+                    BufferSize);
 
-            if (!NT_SUCCESS(ntStatus)) {
+                if (NT_SUCCESS(ntStatus)) {
 
-                iost.Status = ntStatus;
-                iost.Information = 0;
+                    if (NumberOfBytesRead)
+                        *NumberOfBytesRead = BufferSize;
 
-                kdReportReadError(__FUNCTIONW__, Address, BufferSize, ntStatus, &iost);
+                    RtlCopyMemory(Buffer, lockedBuffer, BufferSize);
+
+                    bResult = TRUE;
+                }
+
+                VirtualUnlock(lockedBuffer, BufferSize);
             }
             else {
-                if (NumberOfBytesRead)
-                    *NumberOfBytesRead = BufferSize;
-
-                RtlCopyMemory(Buffer, lockedBuffer, BufferSize);
-
-                bResult = TRUE;
+                ntStatus = STATUS_NOT_LOCKED;
             }
 
-            VirtualUnlock(lockedBuffer, BufferSize);
+            supVirtualFree(lockedBuffer);
         }
-
-        supVirtualFree(lockedBuffer);
+        else {
+            ntStatus = STATUS_MEMORY_NOT_ALLOCATED;
+        }
     }
+    else {
+        ntStatus = STATUS_INVALID_PARAMETER_2;
+    }
+
+    Context->LastNtStatus = ntStatus;
+    Context->IoStatusBlock.Information = 0;
+    Context->IoStatusBlock.Status = ntStatus;
 
     return bResult;
 }
