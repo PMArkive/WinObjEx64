@@ -966,3 +966,11 @@ BOOL supDeleteFileWithWait(
     _In_ ULONG WaitMilliseconds,
     _In_ ULONG NumberOfAttempts,
     _In_ LPCWSTR lpFileName);
+
+NTSTATUS supCallDriver(
+    _In_ HANDLE DeviceHandle,
+    _In_ ULONG IoControlCode,
+    _In_ PVOID InputBuffer,
+    _In_ ULONG InputBufferLength,
+    _In_opt_ PVOID OutputBuffer,
+    _In_opt_ ULONG OutputBufferLength);

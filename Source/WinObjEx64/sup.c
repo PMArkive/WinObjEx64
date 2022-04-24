@@ -8921,3 +8921,33 @@ BOOL supDeleteFileWithWait(
 
     return FALSE;
 }
+
+/*
+* supCallDriver
+*
+* Purpose:
+*
+* Call driver.
+*
+*/
+NTSTATUS supCallDriver(
+    _In_ HANDLE DeviceHandle,
+    _In_ ULONG IoControlCode,
+    _In_ PVOID InputBuffer,
+    _In_ ULONG InputBufferLength,
+    _In_opt_ PVOID OutputBuffer,
+    _In_opt_ ULONG OutputBufferLength)
+{
+    IO_STATUS_BLOCK ioStatus;
+
+    return NtDeviceIoControlFile(DeviceHandle,
+        NULL,
+        NULL,
+        NULL,
+        &ioStatus,
+        IoControlCode,
+        InputBuffer,
+        InputBufferLength,
+        OutputBuffer,
+        OutputBufferLength);
+}

@@ -2688,6 +2688,7 @@ PVOID kdQueryIopInvalidDeviceRequest(
     POBJINFO        pSelfObj;
     ULONG_PTR       drvObjectAddress;
     DRIVER_OBJECT   drvObject;
+    PWDRV_PROVIDER  drvProvider;
 
     //
     // Lookup using symbols.
@@ -2706,28 +2707,31 @@ PVOID kdQueryIopInvalidDeviceRequest(
     //
     if (pHandler == NULL) {
 
-        pSelfObj = ObQueryObject(L"\\Driver", KLDBGDRV);
-        if (pSelfObj) {
+        drvProvider = g_kdctx.DriverContext.Provider;
+        if (drvProvider) {
 
-            drvObjectAddress = pSelfObj->ObjectAddress;
+            pSelfObj = ObQueryObject(L"\\Driver", drvProvider->DriverName);
+            if (pSelfObj) {
 
-            RtlSecureZeroMemory(&drvObject, sizeof(drvObject));
+                drvObjectAddress = pSelfObj->ObjectAddress;
 
-            if (kdReadSystemMemory(drvObjectAddress,
-                &drvObject,
-                sizeof(drvObject)))
-            {
-                pHandler = drvObject.MajorFunction[IRP_MJ_CREATE_MAILSLOT];
+                RtlSecureZeroMemory(&drvObject, sizeof(drvObject));
 
-                //
-                // IopInvalidDeviceRequest is a routine inside ntoskrnl.
-                //
-                if (!kdAddressInNtOsImage(pHandler))
-                    pHandler = NULL;
+                if (kdReadSystemMemory(drvObjectAddress,
+                    &drvObject,
+                    sizeof(drvObject)))
+                {
+                    pHandler = drvObject.MajorFunction[IRP_MJ_CREATE_MAILSLOT];
+
+                    //
+                    // IopInvalidDeviceRequest is a routine inside ntoskrnl.
+                    //
+                    if (!kdAddressInNtOsImage(pHandler))
+                        pHandler = NULL;
+                }
+                supHeapFree(pSelfObj);
             }
-            supHeapFree(pSelfObj);
         }
-
     }
     return pHandler;
 }
@@ -3910,11 +3914,7 @@ VOID kdInit(
     //
     if (supEnablePrivilege(SE_DEBUG_PRIVILEGE, TRUE)) {
 
-        ntStatus = WDrvProvCreate(
-            WDRV_PROVIDER_TYPE,
-            g_kdctx.Data->FirmwareType,
-            &g_kdctx.DriverContext);
-
+        ntStatus = WDrvProvCreate(g_kdctx.Data->FirmwareType, &g_kdctx.DriverContext);
         if (!NT_SUCCESS(ntStatus)) {
 
             RtlStringCchPrintfSecure(szBuffer,

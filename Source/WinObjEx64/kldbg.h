@@ -95,20 +95,6 @@
 // Structure version since W11
 #define OBVERSION_FLT_FILTER_V4 (4)
 
-
-#ifdef _USE_OWN_DRIVER
-#ifdef _USE_WINIO
-#define KLDBGDRV                L"EneTechIo"
-#define KLDBGDRVSYS             L"\\drivers\\ene64drv.sys"
-#else
-#define KLDBGDRV                L"wodbgdrv"
-#define KLDBGDRVSYS             L"\\drivers\\wodbgdrv.sys"
-#endif
-#else
-#define KLDBGDRV                L"kldbgdrv"
-#define KLDBGDRVSYS             L"\\drivers\\kldbgdrv.sys"
-#endif
-
 #define NT_REG_PREP             L"\\Registry\\Machine"
 #define DRIVER_REGKEY           L"%wS\\System\\CurrentControlSet\\Services\\%wS"
 

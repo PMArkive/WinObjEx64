@@ -1119,21 +1119,10 @@ VOID TestCall()
 
 }
 
-VOID TestWdp()
-{
-    WDRV_CONTEXT context;
-
-    NTSTATUS ntStatus = WDrvProvCreate(wdrvMicrosoft, g_kdctx.Data->FirmwareType, &context);
-    if (NT_SUCCESS(ntStatus)) {
-        WDrvProvRelease(&context);
-    }
-}
-
 VOID TestStart(
     VOID
 )
 {
-    //TestWdp();
     TestCall();
     //TestSectionControlArea();
     //TestSymbols();

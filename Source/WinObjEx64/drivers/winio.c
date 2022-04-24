@@ -28,50 +28,72 @@
 #include "winio.h"
 #include "tinyaes/aes.h"
 
+typedef NTSTATUS(WINAPI* pfnMapMemory)(
+    _In_ HANDLE DeviceHandle,
+    _In_ ULONG_PTR PhysicalAddress,
+    _In_ ULONG NumberOfBytes,
+    _Out_ HANDLE* SectionHandle,
+    _Out_ PVOID* ReferencedObject,
+    _Out_ PVOID* MappedMemory);
+
+typedef NTSTATUS(WINAPI* pfnUnmapMemory)(
+    _In_ HANDLE DeviceHandle,
+    _In_ PVOID SectionToUnmap,
+    _In_ HANDLE SectionHandle,
+    _In_ PVOID ReferencedObject);
+
+NTSTATUS WinIoUnmapMemoryEx(
+    _In_ HANDLE DeviceHandle,
+    _In_ PVOID SectionToUnmap,
+    _In_ HANDLE SectionHandle,
+    _In_ PVOID ReferencedObject);
+
+NTSTATUS WinIoUnmapMemory(
+    _In_ HANDLE DeviceHandle,
+    _In_ PVOID SectionToUnmap,
+    _In_ HANDLE SectionHandle,
+    _In_ PVOID ReferencedObject);
+
+NTSTATUS WinIoMapMemory(
+    _In_ HANDLE DeviceHandle,
+    _In_ ULONG_PTR PhysicalAddress,
+    _In_ ULONG NumberOfBytes,
+    _Out_ HANDLE* SectionHandle,
+    _Out_ PVOID* ReferencedObject,
+    _Out_ PVOID* MappedMemory);
+
+NTSTATUS WinIoMapMemoryEx(
+    _In_ HANDLE DeviceHandle,
+    _In_ ULONG_PTR PhysicalAddress,
+    _In_ ULONG NumberOfBytes,
+    _Out_ HANDLE* SectionHandle,
+    _Out_ PVOID* ReferencedObject,
+    _Out_ PVOID* MappedMemory);
+
+#ifdef WINIO_A
+#define MapMemoryRoutine WinIoMapMemoryEx
+#define UnmapMemoryRoutine WinIoUnmapMemoryEx
+#else 
+#ifdef WINIO_B
+#define MapMemoryRoutine WinIoMapMemory
+#define UnmapMemoryRoutine WinIoUnmapMemory
+#endif
+#endif
+
 //
 // AES key used by EneTechIo latest variants.
 //
 ULONG g_EneTechIoUnlockKey[4] = { 0x54454E45, 0x4E484345, 0x474F4C4F, 0x434E4959 };
 
 /*
-* WinIoCallDriver
-*
-* Purpose:
-*
-* Call WinIo driver.
-*
-*/
-NTSTATUS WinIoCallDriver(
-    _In_ HANDLE DeviceHandle,
-    _In_ ULONG IoControlCode,
-    _In_ PVOID InputBuffer,
-    _In_ ULONG InputBufferLength,
-    _In_opt_ PVOID OutputBuffer,
-    _In_opt_ ULONG OutputBufferLength)
-{
-    IO_STATUS_BLOCK ioStatus;
-
-    return NtDeviceIoControlFile(DeviceHandle,
-        NULL,
-        NULL,
-        NULL,
-        &ioStatus,
-        IoControlCode,
-        InputBuffer,
-        InputBufferLength,
-        OutputBuffer,
-        OutputBufferLength);
-}
-
-/*
-* WinIoMapMemory
+* WinIoMapMemoryEx
 *
 * Purpose:
 *
 * Map physical memory through \Device\PhysicalMemory.
 *
 */
-NTSTATUS WinIoMapMemory(
+NTSTATUS WinIoMapMemoryEx(
     _In_ HANDLE DeviceHandle,
     _In_ ULONG_PTR PhysicalAddress,
     _In_ ULONG NumberOfBytes,
@@ -99,8 +121,91 @@ NTSTATUS WinIoMapMemory(
     RtlCopyMemory(&request.EncryptedKey, (PVOID)&seconds, sizeof(seconds));
     AES_ECB_encrypt(&ctx, (UCHAR*)&request.EncryptedKey);
 
-    ntStatus = WinIoCallDriver(DeviceHandle,
-        IOCTL_WINIO_MAP_USER_PHYSICAL_MEMORY,
+    ntStatus = supCallDriver(DeviceHandle,
+        WINIO_IOCTL_MAP,
+        &request,
+        sizeof(request),
+        &request,
+        sizeof(request));
+
+    if (NT_SUCCESS(ntStatus)) {
+        *SectionHandle = request.SectionHandle;
+        *ReferencedObject = request.ReferencedObject;
+        *MappedMemory = request.BaseAddress;
+    }
+
+    return ntStatus;
+}
+
+/*
+* WinIoUnmapMemoryEx
+*
+* Purpose:
+*
+* Unmap previously mapped physical memory.
+*
+*/
+NTSTATUS WinIoUnmapMemoryEx(
+    _In_ HANDLE DeviceHandle,
+    _In_ PVOID SectionToUnmap,
+    _In_ HANDLE SectionHandle,
+    _In_ PVOID ReferencedObject
+)
+{
+    ULONG seconds;
+    AES_ctx ctx;
+    WINIO_PHYSICAL_MEMORY_INFO_EX request;
+
+    RtlSecureZeroMemory(&ctx, sizeof(ctx));
+    AES_init_ctx(&ctx, (uint8_t*)&g_EneTechIoUnlockKey);
+
+    RtlSecureZeroMemory(&request, sizeof(request));
+    request.BaseAddress = SectionToUnmap;
+    request.ReferencedObject = ReferencedObject;
+    request.SectionHandle = SectionHandle;
+
+    seconds = supGetTimeAsSecondsSince1970();
+
+    RtlCopyMemory(&request.EncryptedKey, (PVOID)&seconds, sizeof(ULONG));
+    AES_ECB_encrypt(&ctx, (UCHAR*)&request.EncryptedKey);
+
+    return supCallDriver(DeviceHandle,
+        WINIO_IOCTL_UNMAP,
+        &request,
+        sizeof(request),
+        &request,
+        sizeof(request));
+
+}
+
+/*
+* WinIoMapMemory
+*
+* Purpose:
+*
+* Map physical memory through \Device\PhysicalMemory.
+*
+*/
+NTSTATUS WinIoMapMemory(
+    _In_ HANDLE DeviceHandle,
+    _In_ ULONG_PTR PhysicalAddress,
+    _In_ ULONG NumberOfBytes,
+    _Out_ HANDLE* SectionHandle,
+    _Out_ PVOID* ReferencedObject,
+    _Out_ PVOID* MappedMemory)
+{
+    NTSTATUS ntStatus;
+    WINIO_PHYSICAL_MEMORY_INFO request;
+
+    *SectionHandle = NULL;
+    *ReferencedObject = NULL;
+
+    RtlSecureZeroMemory(&request, sizeof(request));
+    request.ViewSize = NumberOfBytes;
+    request.BusAddress = PhysicalAddress;
+
+    ntStatus = supCallDriver(DeviceHandle,
+        WINIO_IOCTL_MAP,
         &request,
         sizeof(request),
         &request,
@@ -130,30 +235,19 @@ NTSTATUS WinIoUnmapMemory(
     _In_ PVOID ReferencedObject
 )
 {
-    ULONG seconds;
-    AES_ctx ctx;
-    WINIO_PHYSICAL_MEMORY_INFO_EX request;
-
-    RtlSecureZeroMemory(&ctx, sizeof(ctx));
-    AES_init_ctx(&ctx, (uint8_t*)&g_EneTechIoUnlockKey);
+    WINIO_PHYSICAL_MEMORY_INFO request;
 
     RtlSecureZeroMemory(&request, sizeof(request));
     request.BaseAddress = SectionToUnmap;
     request.ReferencedObject = ReferencedObject;
     request.SectionHandle = SectionHandle;
 
-    seconds = supGetTimeAsSecondsSince1970();
-
-    RtlCopyMemory(&request.EncryptedKey, (PVOID)&seconds, sizeof(ULONG));
-    AES_ECB_encrypt(&ctx, (UCHAR*)&request.EncryptedKey);
-
-    return WinIoCallDriver(DeviceHandle,
-        IOCTL_WINIO_UNMAP_USER_PHYSICAL_MEMORY,
+    return supCallDriver(DeviceHandle,
+        WINIO_IOCTL_UNMAP,
         &request,
         sizeof(request),
         &request,
         sizeof(request));
-
 }
 
 /*
@@ -226,7 +320,7 @@ NTSTATUS WINAPI WinIoQueryPML4Value(
 
     do {
 
-        ntStatus = WinIoMapMemory(DeviceHandle,
+        ntStatus = MapMemoryRoutine(DeviceHandle,
             0ULL,
             0x100000,
             &sectionHandle,
@@ -247,7 +341,7 @@ NTSTATUS WINAPI WinIoQueryPML4Value(
         else
             *Value = 0;
 
-        WinIoUnmapMemory(DeviceHandle,
+        UnmapMemoryRoutine(DeviceHandle,
             (PVOID)pbLowStub1M,
             sectionHandle,
             refObject);
@@ -282,7 +376,7 @@ NTSTATUS WINAPI WinIoReadPhysicalMemory(
     //
     // Map physical memory section.
     //
-    ntStatus = WinIoMapMemory(DeviceHandle,
+    ntStatus = MapMemoryRoutine(DeviceHandle,
         PhysicalAddress,
         NumberOfBytes,
         &sectionHandle,
@@ -304,7 +398,7 @@ NTSTATUS WINAPI WinIoReadPhysicalMemory(
         //
         // Unmap physical memory section.
         //
-        WinIoUnmapMemory(DeviceHandle,
+        UnmapMemoryRoutine(DeviceHandle,
             mappedSection,
             sectionHandle,
             refObject);

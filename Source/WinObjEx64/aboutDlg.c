@@ -374,7 +374,7 @@ VOID AboutDialogCollectGlobals(
 )
 {
     BOOLEAN bCustomSignersAllowed;
-
+    LPWSTR lpType;
     ULONG Index, Value, SaveValue;
 
     WCHAR szBuffer[MAX_PATH * 4];
@@ -431,7 +431,7 @@ VOID AboutDialogCollectGlobals(
     // OS version.
     //
     GetDlgItemText(hwndParent, ID_ABOUT_OSNAME, szBuffer, MAX_PATH);
-    AddParameterValue(hwndOutput, TEXT("Operation System"), szBuffer);
+    AddParameterValue(hwndOutput, TEXT("System.OS"), szBuffer);
 
     //
     // CPU.
@@ -494,7 +494,7 @@ VOID AboutDialogCollectGlobals(
             _strcat(szBuffer, szTemp);
         }
 
-        AddParameterValue(hwndOutput, TEXT("Processor"), szBuffer);
+        AddParameterValue(hwndOutput, TEXT("Environment.Processor"), szBuffer);
 
         RegCloseKey(hKey);
     }
@@ -507,66 +507,87 @@ VOID AboutDialogCollectGlobals(
         SystemInfo.dwNumberOfProcessors,
         SystemInfo.dwActiveProcessorMask);
 
-    AddParameterValue(hwndOutput, TEXT("Number of Processors"), szBuffer);
+    AddParameterValue(hwndOutput, TEXT("Environment.NumberOfProcessors"), szBuffer);
 
-    //
-    // List g_kdctx.
-    //
-    AddParameterValueBool(hwndOutput, TEXT("IsFullAdmin"), g_kdctx.IsFullAdmin); //admin privileges available
-    AddParameterValueBool(hwndOutput, TEXT("IsSecureBoot"), g_kdctx.IsSecureBoot); //secure boot enabled
+    AddParameterValueBool(hwndOutput, TEXT("Internal.IsFullAdmin"), g_kdctx.IsFullAdmin); //admin privileges available
+    AddParameterValueBool(hwndOutput, TEXT("Internal.IsSecureBoot"), g_kdctx.IsSecureBoot); //secure boot enabled
+    AddParameterValueBool(hwndOutput, TEXT("Internal.IsWine"), g_WinObj.IsWine);
+    AddParameterValueBool(hwndOutput, TEXT("Internal.EnableFullMitigations"), g_WinObj.EnableFullMitigations);
 
     //
     // Helper driver state.
     //
-    AddParameterValue32Hex(hwndOutput, TEXT("DriverLoadStatus"), g_kdctx.DriverContext.LoadStatus);
-    AddParameterValue32Hex(hwndOutput, TEXT("DriverOpenStatus"), g_kdctx.DriverContext.OpenStatus);
-    AddParameterValueBool(hwndOutput, TEXT("IsOurLoad"), g_kdctx.DriverContext.IsOurLoad); //driver was loaded by our program instance
+    AddParameterValue32Hex(hwndOutput, TEXT("Driver.LoadStatus"), g_kdctx.DriverContext.LoadStatus);
+    AddParameterValue32Hex(hwndOutput, TEXT("Driver.OpenStatus"), g_kdctx.DriverContext.OpenStatus);
+    AddParameterValueBool(hwndOutput, TEXT("Driver.IsOurLoad"), g_kdctx.DriverContext.IsOurLoad); //driver was loaded by our program instance
+    
+    switch (WDrvGetActiveProviderType()) {
+    case wdrvAlice:
+        lpType = L"Alice";
+        break;
+    case wdrvRkhDrv5:
+        lpType = L"Rkhdrv5";
+        break;
+    case wdrvWinIo:
+        lpType = L"WinIo";
+        break;
+    case wdrvWinObjEx64:
+        lpType = L"WinObjEx64";
+        break;
+    case wdrvMicrosoft:
+    default:
+        lpType = L"Microsoft";
+        break;
+    }
+    AddParameterValue(hwndOutput, TEXT("Driver.ActiveProvider"), lpType);
 
-    AddParameterValue64Hex(hwndOutput, TEXT("DirectoryRootObject"), g_kdctx.DirectoryRootObject); //address of object root directory
-    AddParameterValueUlong(hwndOutput, TEXT("DirectoryTypeIndex"), g_kdctx.DirectoryTypeIndex);
+    //
+    // Ntoskrnl
+    //
+    AddParameterValue64Hex(hwndOutput, TEXT("Loader.NtOsBase"), (ULONG_PTR)g_kdctx.NtOsBase);
+    AddParameterValue64Hex(hwndOutput, TEXT("Loader.NtOsImageMap"), (ULONG_PTR)g_kdctx.NtOsImageMap);//mapped image address
+    AddParameterValue32Hex(hwndOutput, TEXT("Loader.NtOsSize"), g_kdctx.NtOsSize);//mapped image size
 
-    AddParameterValue64Hex(hwndOutput, TEXT("NtOsBase"), (ULONG_PTR)g_kdctx.NtOsBase);
-    AddParameterValue64Hex(hwndOutput, TEXT("NtOsImageMap"), (ULONG_PTR)g_kdctx.NtOsImageMap);//mapped image address
-    AddParameterValue32Hex(hwndOutput, TEXT("NtOsSize"), g_kdctx.NtOsSize);//mapped image size
-
-    AddParameterValue64Hex(hwndOutput, TEXT("NtOsSymContext"), (ULONG_PTR)g_kdctx.NtOsSymContext);
+    //
+    // Ntoskrnl symbols
+    //
+    AddParameterValue64Hex(hwndOutput, TEXT("SymContext.ContextBase"), (ULONG_PTR)g_kdctx.NtOsSymContext);
     if (g_kdctx.NtOsSymContext) {
-        AddParameterValue64Hex(hwndOutput, TEXT("NtOsSymContext->ModuleBase"), ((PSYMCONTEXT)g_kdctx.NtOsSymContext)->ModuleBase);
+        AddParameterValue64Hex(hwndOutput, TEXT("SymContext.ModuleBase"), ((PSYMCONTEXT)g_kdctx.NtOsSymContext)->ModuleBase);
     }
 
-    AddParameterValue64Hex(hwndOutput, TEXT("SystemRangeStart"), (ULONG_PTR)g_kdctx.SystemRangeStart);
-    AddParameterValue64Hex(hwndOutput, TEXT("MinimumUserModeAddress"), (ULONG_PTR)g_kdctx.MinimumUserModeAddress);
-    AddParameterValue64Hex(hwndOutput, TEXT("MaximumUserModeAddress"), (ULONG_PTR)g_kdctx.MaximumUserModeAddress);
+    //
+    // Directory object
+    //
+    AddParameterValue64Hex(hwndOutput, TEXT("System.DirectoryRootObject"), g_kdctx.DirectoryRootObject); //address of object root directory
+    AddParameterValueUlong(hwndOutput, TEXT("System.DirectoryTypeIndex"), g_kdctx.DirectoryTypeIndex);
+
+    //
+    // System ranges
+    //
+    AddParameterValue64Hex(hwndOutput, TEXT("System.SystemRangeStart"), (ULONG_PTR)g_kdctx.SystemRangeStart);
+    AddParameterValue64Hex(hwndOutput, TEXT("System.MinimumUserModeAddress"), (ULONG_PTR)g_kdctx.MinimumUserModeAddress);
+    AddParameterValue64Hex(hwndOutput, TEXT("System.MaximumUserModeAddress"), (ULONG_PTR)g_kdctx.MaximumUserModeAddress);
 
     //
     // List kldbg data.
     //
-    AddParameterValueBool(hwndOutput, TEXT("ObHeaderCookieValid"), g_kdctx.Data->ObHeaderCookie.Valid);
-    AddParameterValue32Hex(hwndOutput, TEXT("ObHeaderCookie"), g_kdctx.Data->ObHeaderCookie.Value);
+    AddParameterValueBool(hwndOutput, TEXT("System.ObHeaderCookieValid"), g_kdctx.Data->ObHeaderCookie.Valid);
+    AddParameterValue32Hex(hwndOutput, TEXT("System.ObHeaderCookie"), g_kdctx.Data->ObHeaderCookie.Value);
 
-    AddParameterValueUlong(hwndOutput, TEXT("KiServiceLimit"), g_kdctx.Data->KeServiceDescriptorTable.Limit);
-    AddParameterValue64Hex(hwndOutput, TEXT("KiServiceTableAddress"), (ULONG_PTR)g_kdctx.Data->KeServiceDescriptorTable.Base);
-    AddParameterValue64Hex(hwndOutput, TEXT("IopInvalidDeviceRequest"), (ULONG_PTR)g_kdctx.Data->IopInvalidDeviceRequest);
-    AddParameterValue64Hex(hwndOutput, TEXT("PrivateNamespaceLookupTable"), (ULONG_PTR)g_kdctx.Data->PrivateNamespaceLookupTable);
-
-    //
-    // List g_WinObj (UI specific).
-    //
-    AddParameterValueBool(hwndOutput, TEXT("IsWine"), g_WinObj.IsWine);
-
-    //
-    // For MMIO usage.
-    //
-    AddParameterValueBool(hwndOutput, TEXT("EnableFullMitigations"), g_WinObj.EnableFullMitigations);
+    AddParameterValueUlong(hwndOutput, TEXT("System.KiServiceLimit"), g_kdctx.Data->KeServiceDescriptorTable.Limit);
+    AddParameterValue64Hex(hwndOutput, TEXT("System.KiServiceTableAddress"), (ULONG_PTR)g_kdctx.Data->KeServiceDescriptorTable.Base);
+    AddParameterValue64Hex(hwndOutput, TEXT("System.IopInvalidDeviceRequest"), (ULONG_PTR)g_kdctx.Data->IopInvalidDeviceRequest);
+    AddParameterValue64Hex(hwndOutput, TEXT("System.PrivateNamespaceLookupTable"), (ULONG_PTR)g_kdctx.Data->PrivateNamespaceLookupTable);
 
     //
     // List other data.
     //
     if (NT_SUCCESS(supCICustomKernelSignersAllowed(&bCustomSignersAllowed))) {
-        AddParameterValueBool(hwndOutput, TEXT("CICustomKernelSignersAllowed"), bCustomSignersAllowed);
+        AddParameterValueBool(hwndOutput, TEXT("System.CICustomKernelSignersAllowed"), bCustomSignersAllowed);
     }
 
-    AddParameterValueUlong(hwndOutput, TEXT("DPI Value"), (ULONG)supGetDPIValue(NULL));
+    AddParameterValueUlong(hwndOutput, TEXT("System.DpiValue"), (ULONG)supGetDPIValue(NULL));
 
     CodeIntegrity.Length = sizeof(CodeIntegrity);
     CodeIntegrity.CodeIntegrityOptions = 0;
@@ -576,7 +597,7 @@ VOID AboutDialogCollectGlobals(
         sizeof(CodeIntegrity),
         &Dummy)))
     {
-        AddParameterValue32Hex(hwndOutput, TEXT("CI Options Value"), CodeIntegrity.CodeIntegrityOptions);
+        AddParameterValue32Hex(hwndOutput, TEXT("System.CodeIntegrityOptions"), CodeIntegrity.CodeIntegrityOptions);
 
         if (CodeIntegrity.CodeIntegrityOptions) {
 
@@ -585,7 +606,7 @@ VOID AboutDialogCollectGlobals(
                 if (CodeIntegrity.CodeIntegrityOptions & CodeIntegrityValuesList[Index].dwValue) {
                     AddParameterValue(
                         hwndOutput,
-                        TEXT("CI Option"),
+                        TEXT("System.CodeIntegrityOption"),
                         CodeIntegrityValuesList[Index].lpDescription);
                     CodeIntegrity.CodeIntegrityOptions &= ~CodeIntegrityValuesList[Index].dwValue;
                 }
@@ -596,7 +617,7 @@ VOID AboutDialogCollectGlobals(
                 SaveValue = CodeIntegrity.CodeIntegrityOptions;
                 while (SaveValue) {
                     if (SaveValue & Value) {
-                        AddParameterValue32Hex(hwndOutput, TEXT("CI Option (unknown)"), Value);
+                        AddParameterValue32Hex(hwndOutput, TEXT("System.CodeIntegrityOption(unknown)"), Value);
                         SaveValue &= ~Value;
                     }
                     Value *= 2;
@@ -612,7 +633,7 @@ VOID AboutDialogCollectGlobals(
         sizeof(KernelVaShadow),
         &Dummy)))
     {
-        AddParameterValue32Hex(hwndOutput, TEXT("KvaShadow Flags"), KernelVaShadow.Flags);
+        AddParameterValue32Hex(hwndOutput, TEXT("System.KvaShadowFlags"), KernelVaShadow.Flags);
     }
 
     SpeculationControl.Flags = 0;
@@ -622,8 +643,13 @@ VOID AboutDialogCollectGlobals(
         sizeof(SpeculationControl),
         &Dummy)))
     {
-        AddParameterValue32Hex(hwndOutput, TEXT("SpeculationControl Flags"), SpeculationControl.Flags);
+        AddParameterValue32Hex(hwndOutput, TEXT("System.SpeculationControlFlags"), SpeculationControl.Flags);
     }
+
+    AddParameterValue(hwndOutput, TEXT("System.TempDirectory"), g_WinObj.szTempDirectory);
+    AddParameterValue(hwndOutput, TEXT("System.WindowsDirectory"), g_WinObj.szWindowsDirectory);
+    AddParameterValue(hwndOutput, TEXT("System.SystemDirectory"), g_WinObj.szSystemDirectory);
+    AddParameterValue(hwndOutput, TEXT("System.ProgramDirectory"), g_WinObj.szProgramDirectory);
 
     RtlSecureZeroMemory(&VsmProtectionInfo, sizeof(VsmProtectionInfo));
     if (NT_SUCCESS(NtQuerySystemInformation(
@@ -637,11 +663,6 @@ VOID AboutDialogCollectGlobals(
         AddParameterValueBool(hwndOutput, TEXT("Vsm.HardwareMbecAvailable"), VsmProtectionInfo.HardwareMbecAvailable);
         AddParameterValueBool(hwndOutput, TEXT("Vsm.ApicVirtualizationAvailable"), VsmProtectionInfo.ApicVirtualizationAvailable);
     }
-
-    AddParameterValue(hwndOutput, TEXT("TempDirectory"), g_WinObj.szTempDirectory);
-    AddParameterValue(hwndOutput, TEXT("WindowsDirectory"), g_WinObj.szWindowsDirectory);
-    AddParameterValue(hwndOutput, TEXT("SystemDirectory"), g_WinObj.szSystemDirectory);
-    AddParameterValue(hwndOutput, TEXT("ProgramDirectory"), g_WinObj.szProgramDirectory);
 
     //
     // End work with RichEdit.

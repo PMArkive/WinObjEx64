@@ -18,23 +18,12 @@
 *******************************************************************************/
 #pragma once
 
-#ifdef _USE_OWN_DRIVER
-#ifdef _USE_WINIO
-#define WDRV_PROVIDER_TYPE wdrvWinIoA
-#else
-#define WDRV_PROVIDER_TYPE wdrvInternal
-#endif
-#else
-#define WDRV_PROVIDER_TYPE wdrvMicrosoft
-#endif
-
 typedef enum _WDRVPRVTYPE {
     wdrvMicrosoft = 0,
-    wdrvInternal = 1,
-    wdrvWinIoA = 2,
-    //wdrvWinIoB = 3,
-    //wdrvRkhDrv5 = 4,
-    //wdrvAlice = 5
+    wdrvWinObjEx64 = 1,
+    wdrvWinIo = 2,
+    wdrvRkhDrv5 = 3,
+    wdrvAlice = 4,
     wdrvMax
 } WDRVPRVTYPE;
 
@@ -180,6 +169,9 @@ typedef struct _WDRV_CONTEXT {
 
 } WDRV_CONTEXT, * PWDRV_CONTEXT;
 
+WDRVPRVTYPE WDrvGetActiveProviderType(
+    VOID);
+
 BOOL WINAPI WDrvProvPostOpen(
     _In_ PVOID Param);
 
@@ -193,7 +185,6 @@ NTSTATUS WDrvOpenDriver(
     _In_ PWDRV_CONTEXT Context);
 
 NTSTATUS WDrvProvCreate(
-    _In_ WDRVPRVTYPE ProviderId,
     _In_ FIRMWARE_TYPE FirmwareType,
     _Out_ PWDRV_CONTEXT Context);
 

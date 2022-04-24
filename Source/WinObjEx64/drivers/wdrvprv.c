@@ -20,49 +20,55 @@
 #include "drivers/wdbgdrv.h"
 #include "drivers/winio.h"
 
-static WDRV_PROVIDER g_wdpList[] = {
-    {
-        L"kldbgdrv",
-        L"kldbgdrv",
-        WDRVPROV_FLAGS_NONE,
-        WDrvStartDriver,
-        WDrvStopDriver,
-        WDrvOpenDriver,
-        NULL, //register
-        NULL, //unregister
-        NULL, //preopen
-        NULL, //postopen
-        WDbgDrvReadSystemMemory
-    },
-
-    {
-        L"wodbgdrv",
-        L"wodbgdrv",
-        WDRVPROV_FLAGS_NONE,
-        WDrvStartDriver,
-        WDrvStopDriver,
-        WDrvOpenDriver,
-        NULL, //register
-        NULL, //unregister
-        NULL, //preopen
-        NULL, //postopen
-        WDbgDrvReadSystemMemory
-    },
-
-    {
-        L"ene64drv",
-        L"EneTechIo",
-        WDRVPROV_FLAGS_UEFI_REQUIRED | WDRVPROV_FLAGS_FORCE_SD,
-        WDrvStartDriver,
-        WDrvStopDriver,
-        WDrvOpenDriver,
-        NULL, //register
-        NULL, //unregister
-        NULL, //preopen
-        WDrvProvPostOpen,
-        WinIoReadSystemMemory
-    }
+#ifdef _USE_OWN_DRIVER
+#ifdef _USE_WINIO
+#define WDRV_PROVIDER_TYPE wdrvWinIo
+static WDRV_PROVIDER g_wdpEntry = {
+    WINIO_DRV_NAME,
+    WINIO_DEV_NAME,
+    WDRVPROV_FLAGS_UEFI_REQUIRED | WDRVPROV_FLAGS_FORCE_SD,
+    WDrvStartDriver,
+    WDrvStopDriver,
+    WDrvOpenDriver,
+    NULL, //register
+    NULL, //unregister
+    NULL, //preopen
+    WDrvProvPostOpen,
+    WinIoReadSystemMemory
 };
+#else
+#define WDRV_PROVIDER_TYPE wdrvWinObjEx64
+static WDRV_PROVIDER g_wdpEntry = { 
+    L"wodbgdrv",
+    L"wodbgdrv",
+    WDRVPROV_FLAGS_NONE,
+    WDrvStartDriver,
+    WDrvStopDriver,
+    WDrvOpenDriver,
+    NULL, //register
+    NULL, //unregister
+    NULL, //preopen
+    NULL, //postopen
+    WDbgDrvReadSystemMemory 
+};
+#endif
+#else
+
+#define WDRV_PROVIDER_TYPE wdrvMicrosoft
+static WDRV_PROVIDER g_wdpEntry = {
+    L"kldbgdrv",
+    L"kldbgdrv",
+    WDRVPROV_FLAGS_NONE,
+    WDrvStartDriver,
+    WDrvStopDriver,
+    WDrvOpenDriver,
+    NULL, //register
+    NULL, //unregister
+    NULL, //preopen
+    NULL, //postopen
+    WDbgDrvReadSystemMemory 
+};
+#endif
 
 #define PHY_ADDRESS_MASK                0x000ffffffffff000ull
 #define PHY_ADDRESS_MASK_2MB_PAGES      0x000fffffffe00000ull
@@ -127,6 +133,12 @@ NTSTATUS PwVirtualToPhysical(
     *PhysicalAddress = table;
 
     return STATUS_SUCCESS;
+}
+
+WDRVPRVTYPE WDrvGetActiveProviderType(
+    VOID)
+{
+    return (WDRVPRVTYPE)WDRV_PROVIDER_TYPE;
 }
 
 /*
@@ -464,7 +476,6 @@ VOID WDrvFallBackOnLoad(
 *
 */
 NTSTATUS WDrvProvCreate(
-    _In_ WDRVPRVTYPE ProviderId,
     _In_ FIRMWARE_TYPE FirmwareType,
     _Out_ PWDRV_CONTEXT Context
 )
@@ -472,10 +483,7 @@ NTSTATUS WDrvProvCreate(
     NTSTATUS ntStatus;
     PWDRV_PROVIDER provider = NULL;
 
-    if ((ULONG)ProviderId >= wdrvMax)
-        ProviderId = wdrvMicrosoft;
-
-    provider = &g_wdpList[ProviderId];
+    provider = &g_wdpEntry;
 
     //
     // UEFI compat check.
@@ -484,7 +492,7 @@ NTSTATUS WDrvProvCreate(
         return STATUS_NOT_SUPPORTED;
     }
 
-    Context->Provider = &g_wdpList[ProviderId];
+    Context->Provider = provider;
 
     //
     // Load and open driver.
