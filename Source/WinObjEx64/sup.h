@@ -254,6 +254,7 @@ typedef struct _FILE_VIEW_INFO {
 #define supCICustomKernelSignersAllowed ntsupCICustomKernelSignersAllowed
 #define supPrivilegeEnabled ntsupPrivilegeEnabled
 #define supIsObjectExists ntsupIsObjectExists
+#define supIsKdEnabled ntsupIsKdEnabled
 #define supListViewEnableRedraw(ListView, fEnable) SendMessage(ListView, WM_SETREDRAW, (WPARAM)fEnable, (LPARAM)0)
 
 ULONG supConvertFromPteProtectionMask(

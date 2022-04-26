@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.93
 *
-*  DATE:        22 Apr 2022
+*  DATE:        26 Apr 2022
 *
 *  MINIMUM SUPPORTED OS WINDOWS 7
 *
@@ -3855,6 +3855,9 @@ VOID kdInit(
     RtlSecureZeroMemory(&g_kdpdata, sizeof(g_kdpdata));
     RtlSecureZeroMemory(&g_SystemCallbacks, sizeof(g_SystemCallbacks));
 
+    g_kdctx.DriverContext.LoadStatus = STATUS_DRIVER_UNABLE_TO_LOAD;
+    g_kdctx.DriverContext.OpenStatus = STATUS_UNSUCCESSFUL;
+
     g_kdctx.IsFullAdmin = IsFullAdmin;
 
     g_kdctx.Data = &g_kdpdata;
@@ -3897,34 +3900,28 @@ VOID kdInit(
     ObpFindProcessObjectOffsets(&g_kdctx);
 
     //
-    // Helper drivers other than from MS does not need DEBUG mode.
+    // If the current driver provider is WinDbg then check Windows debug mode.
+    // This is required by WinDbg kldbgdrv.
     //
-#ifndef _USE_OWN_DRIVER
+    if (WDrvGetActiveProviderType() == wdrvMicrosoft) {
 
-    //
-    // Check if system booted in the debug mode.
-    //
-    if (ntsupIsKdEnabled(NULL, NULL) == FALSE)
-        return;
+        if (supIsKdEnabled(NULL, NULL) == FALSE)
+            return;
 
-#endif
+    }
 
     //
-    // Assign debug privilege and continue to load/open helper driver.
+    // Create driver provider context.
     //
-    if (supEnablePrivilege(SE_DEBUG_PRIVILEGE, TRUE)) {
+    ntStatus = WDrvProvCreate(g_kdctx.Data->FirmwareType, &g_kdctx.DriverContext);
+    if (!NT_SUCCESS(ntStatus)) {
 
-        ntStatus = WDrvProvCreate(g_kdctx.Data->FirmwareType, &g_kdctx.DriverContext);
-        if (!NT_SUCCESS(ntStatus)) {
+        RtlStringCchPrintfSecure(szBuffer,
+            MAX_PATH,
+            TEXT("Could not open/load helper driver.\r\nSome features maybe unavailable, error code 0x%lX"),
+            ntStatus);
 
-            RtlStringCchPrintfSecure(szBuffer,
-                MAX_PATH,
-                TEXT("Could not open/load helper driver.\r\nSome features maybe unavailable, error code 0x%lX"),
-                ntStatus);
-
-            MessageBox(GetDesktopWindow(), szBuffer, TEXT("WinObjEx64"), MB_ICONINFORMATION);
-
-        }
+        MessageBox(GetDesktopWindow(), szBuffer, TEXT("WinObjEx64"), MB_ICONINFORMATION);
 
     }
 

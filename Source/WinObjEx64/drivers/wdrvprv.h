@@ -19,10 +19,15 @@
 #pragma once
 
 typedef enum _WDRVPRVTYPE {
+    // Microsoft WinDbg driver
     wdrvMicrosoft = 0,
+    // WinObjEx64 driver
     wdrvWinObjEx64 = 1,
+    // WinIO based driver
     wdrvWinIo = 2,
+    // Rkhdrv series driver
     wdrvRkhDrv5 = 3,
+    // Alice driver
     wdrvAlice = 4,
     wdrvMax
 } WDRVPRVTYPE;

@@ -483,6 +483,13 @@ NTSTATUS WDrvProvCreate(
     NTSTATUS ntStatus;
     PWDRV_PROVIDER provider = NULL;
 
+    //
+    // Enable debug privilege.
+    //
+    if (!supEnablePrivilege(SE_DEBUG_PRIVILEGE, TRUE)) {
+        return STATUS_PRIVILEGE_NOT_HELD;
+    }
+
     provider = &g_wdpEntry;
 
     //
