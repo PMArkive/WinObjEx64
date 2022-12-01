@@ -4,9 +4,9 @@
 *
 *  TITLE:       EXTRASSSDT.C
 *
-*  VERSION:     2.00
+*  VERSION:     2.01
 *
-*  DATE:        19 June 2022
+*  DATE:        01 Dec 2022
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -1692,13 +1692,12 @@ BOOL SdtDlgHandleNotify(
 {
     INT nImageIndex, iSelectionMark;
     LPNMLISTVIEW pListView = (LPNMLISTVIEW)lParam;
-    LPWSTR lpItem;
+    LPWSTR lpItem, lpWin32Name;
     HWND hwndListView;
 
     EXTRASCONTEXT* pDlgContext;
 
     EXTRASCALLBACK CallbackParam;
-    WCHAR szBuffer[MAX_PATH + 1];
 
     if (pListView == NULL)
         return FALSE;
@@ -1741,9 +1740,11 @@ BOOL SdtDlgHandleNotify(
         if (iSelectionMark >= 0) {
             lpItem = supGetItemText(hwndListView, iSelectionMark, 3, NULL);
             if (lpItem) {
-                RtlSecureZeroMemory(szBuffer, sizeof(szBuffer));
-                if (supGetWin32FileName(lpItem, szBuffer, MAX_PATH))
-                    supShowProperties(hwndDlg, szBuffer);
+                lpWin32Name = supGetWin32FileName(lpItem);
+                if (lpWin32Name) {
+                    supShowProperties(hwndDlg, lpWin32Name);
+                    supHeapFree(lpWin32Name);
+                }
                 supHeapFree(lpItem);
             }
         }
