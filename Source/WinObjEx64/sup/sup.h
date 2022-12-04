@@ -367,6 +367,7 @@ BOOL supHeapFree(
 #define supQueryHVCIState ntsupQueryHVCIState
 #define supLookupImageSectionByName ntsupLookupImageSectionByName
 #define supFindPattern ntsupFindPattern
+#define supFindPatternEx ntsupFindPatternEx
 #define supOpenProcess ntsupOpenProcess
 #define supOpenThread ntsupOpenThread
 #define supCICustomKernelSignersAllowed ntsupCICustomKernelSignersAllowed
