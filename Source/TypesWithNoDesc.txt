@@ -12,6 +12,7 @@ ThreadStateChange - new 21H1 object
 PsSiloContextNonPaged - new RS1 object
 PsSiloContextPaged - new RS1 object
 RawInputManager - win32k managed object
+SchedulerSharedData - new win11 22h2+ object, unnamed objects
 Silo (r3 interface removed in 10240 release, object removed in TH2 builds)
 UserApcReserve - same as NtQueueApc except using reserve process allocated memory
 VirtualKey - new RS1 object (not present in RS2)
