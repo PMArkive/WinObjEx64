@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2015 - 2025
+*  (C) COPYRIGHT AUTHORS, 2015 - 2026
 *
 *  TITLE:       KLDBG.H
 *
-*  VERSION:     2.09
+*  VERSION:     2.12
 *
-*  DATE:        19 Aug 2025
+*  DATE:        24 Jul 2026
 *
 *  Common header file for the Kernel Debugger Driver support.
 *
@@ -263,8 +263,9 @@ typedef struct _KLDBGCONTEXT {
     PVOID NtOsBase;
     ULONG NtOsSize;
 
-    //ntoskrnl mapped image
+    //ntoskrnl mapped image and size
     PVOID NtOsImageMap;
+    ULONG NtOsImageSize;
 
     //system range start
     ULONG_PTR SystemRangeStart;
@@ -577,6 +578,7 @@ PVOID kdQueryIopInvalidDeviceRequest(
 
 BOOL kdFindKiServiceTable(
     _In_ ULONG_PTR MappedImageBase,
+    _In_ ULONG MappedImageSize,
     _In_ ULONG_PTR KernelImageBase,
     _Inout_ KSERVICE_TABLE_DESCRIPTOR* ServiceTable);
 

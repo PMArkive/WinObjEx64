@@ -4,14 +4,13 @@
 *
 *  TITLE:       NTSUP.H
 *
-*  VERSION:     2.27
+*  VERSION:     2.30
 *
-*  DATE:        27 Jun 2026
+*  DATE:        25 Jul 2026
 *
 *  Common header file for the NT API support functions and definitions.
 *
 *  Depends on:    ntos.h
-*                 minirtl
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -49,8 +48,6 @@
 #include <ntsecapi.h>
 #undef _NTDEF_
 
-#include "minirtl/minirtl.h"
-
 #ifdef ENABLE_C_EXTERN
 #if defined(__cplusplus)
 extern "C" {
@@ -69,8 +66,6 @@ typedef PVOID(CALLBACK* PNTSUPMEMALLOC)(
 
 typedef BOOL(CALLBACK* PNTSUPMEMFREE)(
     _In_ PVOID Memory);
-
-#define ntsupProcessHeap() NtCurrentPeb()->ProcessHeap
 
 #define NTSUPHASH_SHA256_SIZE 32
 
@@ -109,11 +104,168 @@ typedef enum _NTSUP_IMAGE_TYPE {
     ImageTypeLoaded     // Loaded module (PEB/LdrEntry)
 } NTSUP_IMAGE_TYPE;
 
+typedef struct _NTSUP_SHA256_CTX {
+    ULONG State[8];
+    ULONG64 BitCount;
+    UCHAR Buffer[64];
+} NTSUP_SHA256_CTX, * PNTSUP_SHA256_CTX;
+
+VOID ntsupSha256Init(
+    _Out_ PNTSUP_SHA256_CTX Ctx);
+
+VOID ntsupSha256Update(
+    _Inout_ PNTSUP_SHA256_CTX Ctx,
+    _In_reads_bytes_(Length) const UCHAR* Data,
+    _In_ SIZE_T Length);
+
+VOID ntsupSha256Final(
+    _Inout_ PNTSUP_SHA256_CTX Ctx,
+    _Out_writes_bytes_all_(32) UCHAR Digest[32]);
+
+//
+// Ronova requires get rid of minirtl.
+//
+
+//
+// Minirtl section START
+//
+FORCEINLINE CHAR ntsupLowerCharA(
+    _In_ CHAR c
+)
+{
+    if ((c >= 'A') && (c <= 'Z'))
+        return c + 0x20;
+    else
+        return c;
+}
+
+FORCEINLINE WCHAR ntsupLowerCharW(
+    _In_ WCHAR c
+)
+{
+    if ((c >= L'A') && (c <= L'Z'))
+        return c + 0x20;
+    else
+        return c;
+}
+
+SIZE_T ntsupStrLenA(
+    _In_opt_ LPCSTR String);
+SIZE_T ntsupStrLenW(
+    _In_opt_ LPCWSTR String);
+
+INT ntsupStrCmpA(
+    _In_opt_ LPCSTR String1,
+    _In_opt_ LPCSTR String2);
+INT ntsupStrCmpW(
+    _In_opt_ LPCWSTR String1,
+    _In_opt_ LPCWSTR String2);
+
+INT ntsupStrCmpIA(
+    _In_opt_ LPCSTR String1,
+    _In_opt_ LPCSTR String2);
+INT ntsupStrCmpIW(
+    _In_opt_ LPCWSTR String1,
+    _In_opt_ LPCWSTR String2);
+
+LPSTR ntsupStrNCopyA(
+    _Out_writes_(DestinationCount) LPSTR Destination,
+    _In_ SIZE_T DestinationCount,
+    _In_reads_(SourceCount) LPCSTR Source,
+    _In_ SIZE_T SourceCount);
+
+LPWSTR ntsupStrNCopyW(
+    _Out_writes_(DestinationCount) LPWSTR Destination,
+    _In_ SIZE_T DestinationCount,
+    _In_reads_(SourceCount) LPCWSTR Source,
+    _In_ SIZE_T SourceCount);
+
+INT ntsupStrNCmpA(
+    _In_opt_ LPCSTR String1,
+    _In_opt_ LPCSTR String2,
+    _In_ SIZE_T Count);
+INT ntsupStrNCmpW(
+    _In_opt_ LPCWSTR String1,
+    _In_opt_ LPCWSTR String2,
+    _In_ SIZE_T Count);
+
+LPCSTR ntsupStrStrIA(
+    _In_ LPCSTR String,
+    _In_ LPCSTR SubString);
+LPCWSTR ntsupStrStrIW(
+    _In_ LPCWSTR String,
+    _In_ LPCWSTR SubString);
+
+LPSTR ntsupStrCatA(
+    _Inout_ LPSTR Destination,
+    _In_ LPCSTR Source);
+LPWSTR ntsupStrCatW(
+    _Inout_ LPWSTR Destination,
+    _In_ LPCWSTR Source);
+
+LPSTR ntsupStrCatExA(
+    _Inout_updates_z_(DestinationCount) LPSTR Destination,
+    _In_ SIZE_T DestinationCount,
+    _In_ LPCSTR Source);
+LPWSTR ntsupStrCatExW(
+    _Inout_updates_z_(DestinationCount) LPWSTR Destination,
+    _In_ SIZE_T DestinationCount,
+    _In_ LPCWSTR Source);
+
+#ifdef _UNICODE
+#define ntsupLowerChar ntsupLowerCharW
+#define ntsupStrLen ntsupStrLenW
+#define ntsupStrCmp ntsupStrCmpW
+#define ntsupStrCmpI ntsupStrCmpIW
+#define ntsupStrNCopy ntsupStrNCopyW
+#define ntsupStrNCmp ntsupStrNCmpW
+#define ntsupStrStrI ntsupStrStrIW
+#define ntsupStrCat ntsupStrCatW
+#define ntsupStrCatEx ntsupStrCatExW
+#else
+#define ntsupLowerChar ntsupLowerCharA
+#define ntsupStrLen ntsupStrLenA
+#define ntsupStrCmp ntsupStrCmpA
+#define ntsupStrCmpI ntsupStrCmpIA
+#define ntsupStrNCopy ntsupStrNCopyA
+#define ntsupStrNCmp ntsupStrNCmpA
+#define ntsupStrStrI ntsupStrStrIA
+#define ntsupStrCat ntsupStrCatA
+#define ntsupStrCatEx ntsupStrCatExA
+#endif
+
+//
+// Minirtl section END
+//
+
 PVOID ntsupHeapAlloc(
+    _In_ SIZE_T Size);
+
+PVOID ntsupHeapReAlloc(
+    _In_ PVOID BaseAddress,
     _In_ SIZE_T Size);
 
 BOOL ntsupHeapFree(
     _In_ PVOID BaseAddress);
+
+SIZE_T ntsupHeapSize(
+    _In_ PVOID BaseAddress);
+
+BOOL ntsupHeapValidate(
+    _In_ PVOID BaseAddress);
+
+SIZE_T ntsupHeapCompact(
+    VOID);
+
+BOOL ntsupHeapLock(
+    VOID);
+
+BOOL ntsupHeapUnlock(
+    VOID);
+
+BOOLEAN ntsupIsAddressValid(
+    _In_ PVOID Address,
+    _In_ SIZE_T Size);
 
 PVOID ntsupVirtualAllocEx(
     _In_ SIZE_T Size,
@@ -280,16 +432,33 @@ NTSTATUS ntsupQuerySystemObjectInformationVariableSize(
     _In_ PNTSUPMEMALLOC AllocMem,
     _In_ PNTSUPMEMFREE FreeMem);
 
+NTSTATUS ntsupQuerySystemObjectInformationVariableSizeEx(
+    _In_ PFN_NTQUERYROUTINE QueryRoutine,
+    _In_opt_ HANDLE ObjectHandle,
+    _In_ DWORD InformationClass,
+    _Out_ PVOID * Buffer,
+    _Out_opt_ PULONG ReturnLength,
+    _In_ ULONG InitialBufferSize,
+    _In_ PNTSUPMEMALLOC AllocMem,
+    _In_ PNTSUPMEMFREE FreeMem);
+
 BOOLEAN ntsupQueryVsmProtectionInformation(
     _Out_ PBOOLEAN pbDmaProtectionsAvailable,
     _Out_ PBOOLEAN pbDmaProtectionsInUse,
     _Out_ PBOOLEAN pbHardwareMbecAvailable,
     _Out_ PBOOLEAN pbApicVirtualizationAvailable);
 
-BOOLEAN ntsupQueryHVCIState(
+BOOLEAN ntsupQueryVBSState(
+    _Out_ PBOOLEAN pbVBSRunning,
     _Out_ PBOOLEAN pbHVCIEnabled,
-    _Out_ PBOOLEAN pbHVCIStrictMode,
-    _Out_ PBOOLEAN pbHVCIIUMEnabled);
+    _Out_ PBOOLEAN pbHVCIStrictMode);
+
+PVOID ntsupLookupImageSectionByNameEx(
+    _In_ CHAR * SectionName,
+    _In_ ULONG SectionNameLength,
+    _In_ PVOID DllBase,
+    _In_ SIZE_T ImageSize,
+    _Out_opt_ PULONG SectionSize);
 
 PVOID ntsupLookupImageSectionByName(
     _In_ CHAR* SectionName,
@@ -326,6 +495,10 @@ NTSTATUS ntsupPrivilegeEnabled(
 
 LPWSTR ntsupQueryEnvironmentVariableOffset(
     _In_ PUNICODE_STRING Value);
+
+BOOLEAN ntsupSetEnvironmentVariable(
+    _In_ LPCWSTR Name,
+    _In_opt_ LPCWSTR Value);
 
 DWORD ntsupExpandEnvironmentStrings(
     _In_ LPCWSTR lpSrc,
@@ -407,6 +580,12 @@ ntsupQuerySystemObjectInformationVariableSize((PFN_NTQUERYROUTINE)NtQueryInforma
      ObjectHandle, ObjectInformationClass, Buffer, ReturnLength, AllocMem, FreeMem) \
 ntsupQuerySystemObjectInformationVariableSize((PFN_NTQUERYROUTINE)NtQueryObject, \
     ObjectHandle, ObjectInformationClass, (PVOID*)Buffer, ReturnLength, \
+    (PNTSUPMEMALLOC)AllocMem, (PNTSUPMEMFREE)FreeMem)
+
+#define ntsupQueryObjectInformationEx(\
+     ObjectHandle, ObjectInformationClass, Buffer, ReturnLength, InitialBufferSize, AllocMem, FreeMem) \
+ntsupQuerySystemObjectInformationVariableSizeEx((PFN_NTQUERYROUTINE)NtQueryObject, \
+    ObjectHandle, ObjectInformationClass, (PVOID*)Buffer, ReturnLength, InitialBufferSize, \
     (PNTSUPMEMALLOC)AllocMem, (PNTSUPMEMFREE)FreeMem)
 
 #define ntsupQueryThreadInformation(\

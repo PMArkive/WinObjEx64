@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.H
 *
-*  VERSION:     2.11
+*  VERSION:     2.12
 *
-*  DATE:        12 Jul 2026
+*  DATE:        25 Jul 2026
 *
 *  Common header file for the program support routines.
 *
@@ -425,8 +425,8 @@ BOOL supHeapFree(
 #define supQueryProcessEntryById ntsupQueryProcessEntryById
 #define supWriteBufferToFile ntsupWriteBufferToFile
 #define supQueryVsmProtectionInformation ntsupQueryVsmProtectionInformation
-#define supQueryHVCIState ntsupQueryHVCIState
-#define supLookupImageSectionByName ntsupLookupImageSectionByName
+#define supQueryVBSState ntsupQueryVBSState
+#define supLookupImageSectionByNameEx ntsupLookupImageSectionByNameEx
 #define supFindPattern ntsupFindPattern
 #define supFindPatternEx ntsupFindPatternEx
 #define supOpenProcess ntsupOpenProcess
@@ -456,6 +456,12 @@ BOOL supHeapFree(
 
 #define supQueryThreadInformation(ThreadHandle, ThreadInformationClass, Buffer, ReturnLength) \
     ntsupQueryThreadInformation(ThreadHandle, ThreadInformationClass, Buffer, ReturnLength, supHeapAlloc, supHeapFree)
+
+#define supQueryTokenInformation(TokenHandle, TokenInformationClass, Buffer, ReturnLength) \
+    ntsupQueryTokenInformation(TokenHandle, TokenInformationClass, Buffer, ReturnLength, supHeapAlloc, supHeapFree)
+
+#define supQueryObjectTypesInformation(Buffer, ReturnLength, InitialBufferSize) \
+    ntsupQueryObjectInformationEx(NULL, ObjectTypesInformation, Buffer, ReturnLength, InitialBufferSize, supHeapAlloc, supHeapFree)
 
 FORCEINLINE BOOLEAN supUnicodeStringValid(
     _In_ PUNICODE_STRING SourceString

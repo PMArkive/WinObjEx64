@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.C
 *
-*  VERSION:     2.11
+*  VERSION:     2.12
 *
-*  DATE:        11 Jul 2026
+*  DATE:        25 Jul 2026
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -1128,37 +1128,17 @@ PVOID supGetTokenInfo(
 )
 {
     PVOID Buffer = NULL;
-    ULONG returnLength = 0;
 
-    if (ReturnLength)
-        *ReturnLength = 0;
-
-    NtQueryInformationToken(TokenHandle,
+    if (NT_SUCCESS(supQueryTokenInformation(
+        TokenHandle,
         TokenInformationClass,
-        NULL,
-        0,
-        &returnLength);
-
-    Buffer = supHeapAlloc((SIZE_T)returnLength);
-    if (Buffer) {
-
-        if (NT_SUCCESS(NtQueryInformationToken(TokenHandle,
-            TokenInformationClass,
-            Buffer,
-            returnLength,
-            &returnLength)))
-        {
-            if (ReturnLength)
-                *ReturnLength = returnLength;
-            return Buffer;
-        }
-        else {
-            supHeapFree(Buffer);
-            return NULL;
-        }
+        &Buffer,
+        ReturnLength)))
+    {
+        return Buffer;
     }
 
-    return Buffer;
+    return NULL;
 }
 
 /*
@@ -1224,24 +1204,6 @@ PVOID supGetSystemInfo(
 }
 
 /*
-* supxFreeObjectTypes
-*
-* Purpose:
-*
-* Free object types memory callback.
-*
-*/
-BOOL CALLBACK supxFreeObjectTypes(
-    _In_opt_ PVOID Context
-)
-{
-    if (Context)
-        supHeapFree(Context);
-
-    return TRUE;
-}
-
-/*
 * supGetObjectTypesInfo
 *
 * Purpose:
@@ -1255,38 +1217,16 @@ PVOID supGetObjectTypesInfo(
     VOID
 )
 {
-    PVOID       buffer = NULL;
-    ULONG       bufferSize = 1024 * 16;
-    NTSTATUS    ntStatus;
-    ULONG       returnedLength = 0;
+    PVOID buffer = NULL;
+    ULONG returnedLength = 0;
 
-    buffer = supHeapAlloc((SIZE_T)bufferSize);
-    if (buffer == NULL)
-        return NULL;
-
-    while ((ntStatus = NtQueryObject(
-        NULL,
-        ObjectTypesInformation,
-        buffer,
-        bufferSize,
-        &returnedLength)) == STATUS_INFO_LENGTH_MISMATCH)
+    if (NT_SUCCESS(supQueryObjectTypesInformation(&buffer, 
+        &returnedLength, 
+        1024 * 16))) 
     {
-        supHeapFree(buffer);
-        bufferSize *= 2;
-
-        if (bufferSize > (16 * 1024 * 1024))
-            return NULL;
-
-        buffer = supHeapAlloc((SIZE_T)bufferSize);
-    }
-
-    if (NT_SUCCESS(ntStatus)) {
         return buffer;
     }
-
-    if (buffer)
-        supHeapFree(buffer);
-
+    
     return NULL;
 }
 

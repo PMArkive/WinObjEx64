@@ -4,9 +4,9 @@
 *
 *  TITLE:       W32K.H
 *
-*  VERSION:     2.11
+*  VERSION:     2.12
 *
-*  DATE:        22 Jun 2026
+*  DATE:        24 Jul 2026
 *
 *  Common header file for the win32k support routines.
 *
@@ -147,7 +147,8 @@ typedef struct _SDT_CONTEXT {
     HANDLE ExportsEnumHeap;                 //heap handle for enum
 
     HMODULE UserModule;                     //win32u.dll hmodule
-    HMODULE KernelModule;                   //win32k.sys hmodule
+    HMODULE MappedKernelModule;             //win32k.sys hmodule
+    ULONG MappedKernelModuleSize;           //win32k.sys hmodule size
 
     PRAW_SYSCALL_ENTRY UserTable;           //win32u syscalls exports dump
     ULONG UserLimit;                        //win32u syscalls count

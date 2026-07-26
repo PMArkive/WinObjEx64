@@ -4,9 +4,9 @@
 *
 *  TITLE:       EXTRASSSDT.C
 *
-*  VERSION:     2.11
+*  VERSION:     2.12
 *
-*  DATE:        12 Jul 2026
+*  DATE:        26 Jul 2026
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -206,6 +206,7 @@ BOOL SdtListCreateTable(
         {
             if (!kdFindKiServiceTable(
                 (ULONG_PTR)g_kdctx.NtOsImageMap,
+                g_kdctx.NtOsImageSize,
                 (ULONG_PTR)g_kdctx.NtOsBase,
                 &g_kdctx.Data->KeServiceDescriptorTable))
             {
@@ -579,7 +580,7 @@ BOOL SdtListCreateTableShadow(
                         lpFunctionName = tableEntry->Name;
 
                         tableEntry->KernelStubAddress = g_SDTCtx.W32pServiceTableUserBase[i];
-                        functionPtr = (PBYTE)g_SDTCtx.KernelModule + tableEntry->KernelStubAddress;
+                        functionPtr = (PBYTE)g_SDTCtx.MappedKernelModule + tableEntry->KernelStubAddress;
                         tableEntry->KernelStubAddress += g_SDTCtx.KernelBaseAddress;
 
                         sdtFn.ServiceName = tableEntry->Name;

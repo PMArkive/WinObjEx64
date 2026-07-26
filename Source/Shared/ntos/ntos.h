@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.247
+*  VERSION:     1.250
 *
-*  DATE:        12 Jul 2026
+*  DATE:        23 Jul 2026
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -512,6 +512,11 @@ char _RTL_CONSTANT_STRING_type_check(const void *s);
 #define MAX_USTRING ( sizeof(WCHAR) * (MAXUSHORT/sizeof(WCHAR)) )
 #endif
 
+#ifndef __PCSID_DEFINED__
+#define __PCSID_DEFINED__
+typedef const SID* PCSID;
+#endif /* __PCSID_DEFINED__ */
+
 typedef struct _EX_RUNDOWN_REF {
     union
     {
@@ -938,7 +943,8 @@ typedef struct _SYSTEM_ISOLATED_USER_MODE_INFORMATION {
     BOOLEAN HardwareEnforcedHvpt : 1;
     BOOLEAN HardwareHvptAvailable : 1;
     BOOLEAN SpareFlags2 : 1;
-    BOOLEAN Spare0[6];
+    BOOLEAN EncryptionKeyTpmBound : 1;
+    BOOLEAN Spare0[5];
     ULONGLONG Spare1;
 } SYSTEM_ISOLATED_USER_MODE_INFORMATION, *PSYSTEM_ISOLATED_USER_MODE_INFORMATION;
 
@@ -10641,6 +10647,8 @@ RtlWow64SetThreadContext(
 *
 ************************************************************************************/
 
+#define RtlProcessHeap() (NtCurrentPeb()->ProcessHeap)
+
 typedef NTSTATUS(NTAPI * PRTL_HEAP_COMMIT_ROUTINE)(
     _In_  PVOID Base,
     _Inout_ PVOID *CommitAddress,
@@ -10764,6 +10772,33 @@ NTAPI
 RtlEnumProcessHeaps(
     _In_ PRTL_ENUM_HEAPS_ROUTINE EnumRoutine,
     _In_ PVOID Parameter);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlValidateHeap(
+    _In_opt_ HANDLE HeapHandle,
+    _In_ ULONG Flags,
+    _In_opt_ PVOID BaseAddress);
+
+NTSYSAPI
+SIZE_T
+NTAPI
+RtlCompactHeap(
+    _In_ HANDLE HeapHandle,
+    _In_ ULONG Flags);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlLockHeap(
+    _In_ HANDLE HeapHandle);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlUnlockHeap(
+    _In_ HANDLE HeapHandle);
 
 /************************************************************************************
 *
@@ -11487,6 +11522,123 @@ RtlSetIoCompletionCallback(
 
 /************************************************************************************
 *
+* RTL WNF (Windows Notification Facility support.
+*
+************************************************************************************/
+
+#define WNF_STATE_KEY 0x41C64E6DA3BC0074
+
+typedef ULONG WNF_CHANGE_STAMP, * PWNF_CHANGE_STAMP;
+
+typedef enum _WNF_STATE_NAME_INFORMATION {
+    WnfInfoStateNameExist,
+    WnfInfoSubscribersPresent,
+    WnfInfoIsQuiescent
+} WNF_STATE_NAME_INFORMATION;
+
+typedef struct _WNF_STATE_NAME {
+    union
+    {
+        ULONGLONG Value;
+        ULONG Data[2];
+        struct
+        {
+            ULONG64 Version : 4;
+            ULONG64 NameLifetime : 2;
+            ULONG64 DataScope : 4;
+            ULONG64 PermanentData : 1;
+            ULONG64 Unique : 53;
+        };
+    };
+} WNF_STATE_NAME, * PWNF_STATE_NAME;
+typedef const WNF_STATE_NAME* PCWNF_STATE_NAME;
+
+typedef enum _WNF_STATE_NAME_LIFETIME {
+    WnfWellKnownStateName,
+    WnfPermanentStateName,
+    WnfPersistentStateName,
+    WnfTemporaryStateName
+} WNF_STATE_NAME_LIFETIME;
+
+typedef enum _WNF_DATA_SCOPE {
+    WnfDataScopeSystem,
+    WnfDataScopeSession,
+    WnfDataScopeUser,
+    WnfDataScopeProcess,
+    WnfDataScopeMachine,
+    WnfDataScopePhysicalMachine,
+} WNF_DATA_SCOPE;
+
+typedef struct _WNF_TYPE_ID {
+    GUID TypeId;
+} WNF_TYPE_ID, * PWNF_TYPE_ID;
+typedef const WNF_TYPE_ID* PCWNF_TYPE_ID;
+
+_Must_inspect_result_
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlEqualWnfChangeStamps(
+    _In_ WNF_CHANGE_STAMP ChangeStamp1,
+    _In_ WNF_CHANGE_STAMP ChangeStamp2);
+
+_Always_(_Post_satisfies_(return == STATUS_NO_MEMORY || return == STATUS_RETRY || return == STATUS_SUCCESS))
+typedef _Function_class_(WNF_USER_CALLBACK)
+NTSTATUS NTAPI WNF_USER_CALLBACK(
+    _In_ WNF_STATE_NAME StateName,
+    _In_ WNF_CHANGE_STAMP ChangeStamp,
+    _In_opt_ PWNF_TYPE_ID TypeId,
+    _In_opt_ PVOID CallbackContext,
+    _In_reads_bytes_opt_(Length) const VOID* Buffer,
+    _In_ ULONG Length);
+
+typedef WNF_USER_CALLBACK* PWNF_USER_CALLBACK;
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlQueryWnfStateData(
+    _Out_ PWNF_CHANGE_STAMP ChangeStamp,
+    _In_ WNF_STATE_NAME StateName,
+    _In_ PWNF_USER_CALLBACK Callback,
+    _In_opt_ PVOID CallbackContext,
+    _In_opt_ PWNF_TYPE_ID TypeId);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlPublishWnfStateData(
+    _In_ WNF_STATE_NAME StateName,
+    _In_opt_ PCWNF_TYPE_ID TypeId,
+    _In_reads_bytes_opt_(Length) const VOID * Buffer,
+    _In_opt_ ULONG Length,
+    _In_opt_ const VOID * ExplicitScope);
+
+typedef struct WNF_USER_SUBSCRIPTION* PWNF_USER_SUBSCRIPTION;
+
+#define WNF_CREATE_SERIALIZATION_GROUP_FLAG 0x00000001L
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlSubscribeWnfStateChangeNotification(
+    _Out_ PWNF_USER_SUBSCRIPTION * SubscriptionHandle,
+    _In_ WNF_STATE_NAME StateName,
+    _In_ WNF_CHANGE_STAMP ChangeStamp,
+    _In_ PWNF_USER_CALLBACK Callback,
+    _In_opt_ PVOID CallbackContext,
+    _In_opt_ PCWNF_TYPE_ID TypeId,
+    _In_opt_ ULONG SerializationGroup,
+    _In_ ULONG Flags);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlUnsubscribeWnfStateChangeNotification(
+    _In_ PWNF_USER_SUBSCRIPTION SubscriptionHandle);
+
+/************************************************************************************
+*
 * RTL data exports.
 *
 ************************************************************************************/
@@ -11509,13 +11661,31 @@ NTSYSAPI UNICODE_STRING RtlNtPathSeperatorString;
 *
 ************************************************************************************/
 
+#ifndef EVENT_DESCRIPTOR_DEF
+#define EVENT_DESCRIPTOR_DEF
+typedef struct _EVENT_DESCRIPTOR {
+    USHORT Id;
+    UCHAR Version;
+    UCHAR Channel;
+    UCHAR Level;
+    UCHAR Opcode;
+    USHORT Task;
+    ULONGLONG Keyword;
+} EVENT_DESCRIPTOR, * PEVENT_DESCRIPTOR;
+typedef const EVENT_DESCRIPTOR* PCEVENT_DESCRIPTOR;
+#endif
+
+typedef struct _EVENT_FILTER_DESCRIPTOR* PEVENT_FILTER_DESCRIPTOR;
+typedef struct _EVENT_DATA_DESCRIPTOR EVENT_DATA_DESCRIPTOR, * PEVENT_DATA_DESCRIPTOR;
+typedef enum _EVENT_INFO_CLASS EVENT_INFO_CLASS;
+
 typedef VOID(NTAPI *PETWENABLECALLBACK)(
     _In_ LPCGUID SourceId,
     _In_ ULONG IsEnabled,
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ /*EVENT_FILTER_DESCRIPTOR*/ PVOID FilterData,
+    _In_opt_ PEVENT_FILTER_DESCRIPTOR FilterData,
     _Inout_opt_ PVOID CallbackContext
     );
 
@@ -11531,12 +11701,26 @@ EtwEventRegister(
 NTSYSAPI
 ULONG
 NTAPI
+EtwEventUnregister(
+    _In_ REGHANDLE RegHandle);
+
+NTSYSAPI
+ULONG
+NTAPI
 EtwEventWriteNoRegistration(
     _In_ LPCGUID ProviderId,
-    _In_ /*PCEVENT_DESCRIPTOR*/ PVOID EventDescriptor,
+    _In_ PCEVENT_DESCRIPTOR EventDescriptor,
     _In_ ULONG UserDataCount,
-    _In_reads_opt_(UserDataCount) /*PEVENT_DATA_DESCRIPTOR*/PVOID UserData);
+    _In_reads_opt_(UserDataCount) PEVENT_DATA_DESCRIPTOR UserData);
 
+NTSYSAPI
+ULONG
+NTAPI
+EtwEventSetInformation(
+    _In_ REGHANDLE RegHandle,
+    _In_ EVENT_INFO_CLASS InformationClass,
+    _In_reads_bytes_(InformationLength) PVOID EventInformation,
+    _In_ ULONG InformationLength);
 
 /*
 ** Runtime Library API END
@@ -12021,6 +12205,85 @@ NtReleaseSemaphore(
     _In_ HANDLE SemaphoreHandle,
     _In_ LONG ReleaseCount,
     _Out_opt_ PLONG PreviousCount);
+
+/************************************************************************************
+*
+* WNF API.
+*
+************************************************************************************/
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtCreateWnfStateName(
+    _Out_ PWNF_STATE_NAME StateName,
+    _In_ WNF_STATE_NAME_LIFETIME NameLifetime,
+    _In_ WNF_DATA_SCOPE DataScope,
+    _In_ BOOLEAN PersistData,
+    _In_opt_ PCWNF_TYPE_ID TypeId,
+    _In_ ULONG MaximumStateSize,
+    _In_ PSECURITY_DESCRIPTOR SecurityDescriptor);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtDeleteWnfStateName(
+    _In_ PCWNF_STATE_NAME StateName);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtUpdateWnfStateData(
+    _In_ PCWNF_STATE_NAME StateName,
+    _In_reads_bytes_opt_(Length) const VOID* Buffer,
+    _In_opt_ ULONG Length,
+    _In_opt_ PCWNF_TYPE_ID TypeId,
+    _In_opt_ PCSID ExplicitScope,
+    _In_ WNF_CHANGE_STAMP MatchingChangeStamp,
+    _In_ LOGICAL CheckStamp);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtDeleteWnfStateData(
+    _In_ PCWNF_STATE_NAME StateName,
+    _In_opt_ PCSID ExplicitScope);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtQueryWnfStateData(
+    _In_ PCWNF_STATE_NAME StateName,
+    _In_opt_ PCWNF_TYPE_ID TypeId,
+    _In_opt_ PCSID ExplicitScope,
+    _Out_ PWNF_CHANGE_STAMP ChangeStamp,
+    _Out_writes_bytes_opt_(*BufferLength) PVOID Buffer,
+    _Inout_ PULONG BufferLength);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtQueryWnfStateNameInformation(
+    _In_ PCWNF_STATE_NAME StateName,
+    _In_ WNF_STATE_NAME_INFORMATION NameInfoClass,
+    _In_opt_ PCSID ExplicitScope,
+    _Out_writes_bytes_(BufferLength) PVOID Buffer,
+    _In_ ULONG BufferLength);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtSubscribeWnfStateChange(
+    _In_ PCWNF_STATE_NAME StateName,
+    _In_opt_ WNF_CHANGE_STAMP ChangeStamp,
+    _In_ ULONG EventMask,
+    _Out_opt_ PULONG64 SubscriptionId);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtUnsubscribeWnfStateChange(
+    _In_ PCWNF_STATE_NAME StateName);
 
 /************************************************************************************
 *

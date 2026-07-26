@@ -149,6 +149,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
       <AdditionalManifestFiles>rsrc\obex.manifest</AdditionalManifestFiles>
       <EnableDpiAwareness>true</EnableDpiAwareness>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <Bscmake>
       <SuppressStartupBanner>false</SuppressStartupBanner>
@@ -178,6 +179,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
       <AdditionalManifestFiles>rsrc\obex.manifest</AdditionalManifestFiles>
       <EnableDpiAwareness>true</EnableDpiAwareness>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <Bscmake>
       <SuppressStartupBanner>false</SuppressStartupBanner>
@@ -230,6 +232,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
       <AdditionalManifestFiles>rsrc\obex.manifest</AdditionalManifestFiles>
       <EnableDpiAwareness>true</EnableDpiAwareness>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <Bscmake>
       <SuppressStartupBanner>false</SuppressStartupBanner>
@@ -279,6 +282,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
       <AdditionalManifestFiles>rsrc\obex.manifest</AdditionalManifestFiles>
       <EnableDpiAwareness>true</EnableDpiAwareness>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <Bscmake>
       <SuppressStartupBanner>false</SuppressStartupBanner>
@@ -331,6 +335,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
       <AdditionalManifestFiles>rsrc\obex.manifest</AdditionalManifestFiles>
       <EnableDpiAwareness>true</EnableDpiAwareness>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <Bscmake>
       <SuppressStartupBanner>false</SuppressStartupBanner>
@@ -418,7 +423,6 @@
     <ClCompile Include="props\propType.c" />
     <ClCompile Include="sdviewDlg.c" />
     <ClCompile Include="sysinfoDlg.c" />
-    <ClCompile Include="tests\ntsup_tests.c" />
     <ClCompile Include="tests\testunit.c" />
     <ClCompile Include="tests\uitest.c" />
   </ItemGroup>
@@ -473,7 +477,6 @@
     <ClInclude Include="props\propSecurityConsts.h" />
     <ClInclude Include="props\propTypeConsts.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="tests\ntsup_tests.h" />
     <ClInclude Include="tests\testunit.h" />
     <ClInclude Include="tests\uitest.h" />
     <ClInclude Include="ui.h" />
