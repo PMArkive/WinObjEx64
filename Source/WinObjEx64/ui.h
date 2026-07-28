@@ -6,7 +6,7 @@
 *
 *  VERSION:     2.12
 *
-*  DATE:        25 Jul 2026
+*  DATE:        28 Jul 2026
 *
 *  Common header file for the user interface.
 *
@@ -197,6 +197,9 @@ typedef struct _LVCOLUMNS_DATA {
 #define ErrShadowWin32kGlobalsNotFound      10
 #define ErrShadowWin32kOffsetNotFound       11
 #define ErrShadowWin32kGetStateNotFound     12
+
+#define OBEX_DEFAULT_WIDTH  800
+#define OBEX_DEFAULT_HEIGHT 600
 
 //
 // Common Dialog handlers.

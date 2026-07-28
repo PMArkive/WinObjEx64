@@ -1071,11 +1071,8 @@ LRESULT CALLBACK MainWindowProc(
         }
         break;
 
-    case WM_CLOSE:
-        DestroyWindow(hwnd);
-        return TRUE;
-
     case WM_DESTROY:
+        supWriteObexConfiguration(hwnd);
         PostQuitMessage(0);
         return 0;
 
@@ -1511,6 +1508,7 @@ DWORD guiCreateMainWindowAndComponents(
     HIMAGELIST treeViewImages;
     INITCOMMONCONTROLSEX iccx;
     WNDCLASSEX wndClass;
+    POBEX_CONFIG pObexConfig;
     HINSTANCE hInstance = Globals->hInstance;
     WCHAR szWindowTitle[100];
 
@@ -1569,6 +1567,8 @@ DWORD guiCreateMainWindowAndComponents(
             _strcat(szWindowTitle, TEXT(" (Wine)"));
         }
 
+        pObexConfig = supGetParametersBlock();
+
         //
         // Create main window.
         //
@@ -1577,10 +1577,10 @@ DWORD guiCreateMainWindowAndComponents(
             MAKEINTATOM(classAtom),
             szWindowTitle,
             WS_VISIBLE | WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            SCALE_DPI_VALUE(800, Globals->CurrentDPI),
-            SCALE_DPI_VALUE(600, Globals->CurrentDPI),
+            pObexConfig->X,
+            pObexConfig->Y,
+            SCALE_DPI_VALUE(pObexConfig->Width, Globals->CurrentDPI),
+            SCALE_DPI_VALUE(pObexConfig->Height, Globals->CurrentDPI),
             NULL,
             NULL,
             hInstance,

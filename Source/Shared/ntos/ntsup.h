@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTSUP.H
 *
-*  VERSION:     2.30
+*  VERSION:     2.31
 *
-*  DATE:        25 Jul 2026
+*  DATE:        26 Jul 2026
 *
 *  Common header file for the NT API support functions and definitions.
 *
@@ -126,6 +126,20 @@ VOID ntsupSha256Final(
 // Ronova requires get rid of minirtl.
 //
 
+FORCEINLINE BOOLEAN ntsupIsDigitA(
+    _In_ CHAR Ch
+)
+{
+    return (BOOLEAN)(Ch >= '0' && Ch <= '9');
+}
+
+FORCEINLINE BOOLEAN ntsupIsDigitW(
+    _In_ WCHAR Ch
+)
+{
+    return (BOOLEAN)(Ch >= L'0' && Ch <= L'9');
+}
+
 //
 // Minirtl section START
 //
@@ -149,6 +163,13 @@ FORCEINLINE WCHAR ntsupLowerCharW(
         return c;
 }
 
+LPWSTR ntsupStrChrW(
+    _In_z_ LPCWSTR String,
+    _In_ WCHAR Character);
+LPSTR ntsupStrChrA(
+    _In_z_ LPCSTR String,
+    _In_ CHAR Character);
+
 SIZE_T ntsupStrLenA(
     _In_opt_ LPCSTR String);
 SIZE_T ntsupStrLenW(
@@ -168,14 +189,20 @@ INT ntsupStrCmpIW(
     _In_opt_ LPCWSTR String1,
     _In_opt_ LPCWSTR String2);
 
+LPSTR ntsupStrCopyA(
+    _Out_writes_z_(_String_length_(Source) + 1) LPSTR Destination,
+    _In_z_ LPCSTR Source);
+LPWSTR ntsupStrCopyW(
+    _Out_writes_z_(_String_length_(Source) + 1) LPWSTR Destination,
+    _In_z_ LPCWSTR Source);
+
 LPSTR ntsupStrNCopyA(
-    _Out_writes_(DestinationCount) LPSTR Destination,
+    _Out_writes_z_(DestinationCount) LPSTR Destination,
     _In_ SIZE_T DestinationCount,
     _In_reads_(SourceCount) LPCSTR Source,
     _In_ SIZE_T SourceCount);
-
 LPWSTR ntsupStrNCopyW(
-    _Out_writes_(DestinationCount) LPWSTR Destination,
+    _Out_writes_z_(DestinationCount) LPWSTR Destination,
     _In_ SIZE_T DestinationCount,
     _In_reads_(SourceCount) LPCWSTR Source,
     _In_ SIZE_T SourceCount);
@@ -212,26 +239,50 @@ LPWSTR ntsupStrCatExW(
     _In_ SIZE_T DestinationCount,
     _In_ LPCWSTR Source);
 
+BOOL ntsupStrToUInt64A(
+    _In_ LPCSTR String,
+    _Out_ PULONGLONG Value);
+BOOL ntsupStrToUInt64W(
+    _In_ LPCWSTR String,
+    _Out_ PULONGLONG Value);
+
+SIZE_T ntsupUInt64ToStrW(
+    _In_ ULONGLONG Value,
+    _Out_writes_z_(BufferCount) LPWSTR Buffer,
+    _In_ SIZE_T BufferCount);
+SIZE_T ntsupUInt64ToStrA(
+    _In_ ULONGLONG Value,
+    _Out_writes_z_(BufferCount) LPSTR Buffer,
+    _In_ SIZE_T BufferCount);
+
 #ifdef _UNICODE
 #define ntsupLowerChar ntsupLowerCharW
+#define ntsupStrChr ntsupStrChrW
 #define ntsupStrLen ntsupStrLenW
 #define ntsupStrCmp ntsupStrCmpW
 #define ntsupStrCmpI ntsupStrCmpIW
+#define ntsupStrCopy ntsupStrCopyW
 #define ntsupStrNCopy ntsupStrNCopyW
 #define ntsupStrNCmp ntsupStrNCmpW
 #define ntsupStrStrI ntsupStrStrIW
 #define ntsupStrCat ntsupStrCatW
 #define ntsupStrCatEx ntsupStrCatExW
+#define ntsupStrToUInt64 ntsupStrToUInt64W
+#define ntsupUInt64ToStr ntsupUInt64ToStrW
 #else
 #define ntsupLowerChar ntsupLowerCharA
+#define ntsupStrChr ntsupStrChrA
 #define ntsupStrLen ntsupStrLenA
 #define ntsupStrCmp ntsupStrCmpA
 #define ntsupStrCmpI ntsupStrCmpIA
+#define ntsupStrCopy ntsupStrCopyA
 #define ntsupStrNCopy ntsupStrNCopyA
 #define ntsupStrNCmp ntsupStrNCmpA
 #define ntsupStrStrI ntsupStrStrIA
 #define ntsupStrCat ntsupStrCatA
 #define ntsupStrCatEx ntsupStrCatExA
+#define ntsupStrToUInt64 ntsupStrToUInt64A
+#define ntsupUInt64ToStr ntsupUInt64ToStrA
 #endif
 
 //

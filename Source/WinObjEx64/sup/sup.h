@@ -6,7 +6,7 @@
 *
 *  VERSION:     2.12
 *
-*  DATE:        25 Jul 2026
+*  DATE:        28 Jul 2026
 *
 *  Common header file for the program support routines.
 *
@@ -51,11 +51,19 @@
 #define supObexSymPath              L"SymPath"
 #define supObexSymDbgHelpDll        L"SymDbgHelpDll"
 #define supObexNormalizationSymbol  L"NormalizationSymbol"
+#define supObexWindowX              L"WindowX"
+#define supObexWindowY              L"WindowY"
+#define supObexWindowH              L"WindowH"
+#define supObexWindowW              L"WindowW"
 
 // All relatives to supObexConfiguration
 typedef struct _OBEX_CONFIG {
     BOOLEAN SymbolsPathValid;
     BOOLEAN SymbolsDbgHelpDllValid;
+    INT X;
+    INT Y;
+    INT Width;
+    INT Height;
     WCHAR szNormalizationSymbol;                 //supObexNormalizationSymbol
     WCHAR szSymbolsPath[MAX_PATH + 1];           //supObexSymbolsPath
     WCHAR szSymbolsDbgHelpDll[MAX_PATH + 1];     //supObexSymbolsDbgHelpDll
@@ -1274,6 +1282,10 @@ BOOL supImageFixSections(
 
 VOID supCloseKnownPropertiesDialog(
     _In_opt_ HWND hwndDlg);
+
+_Success_(return)
+BOOL supWriteObexConfiguration(
+    _In_ HWND hwnd);
 
 _Success_(return)
 BOOL supReadObexConfiguration(

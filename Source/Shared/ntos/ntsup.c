@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTSUP.C
 *
-*  VERSION:     2.30
+*  VERSION:     2.31
 *
-*  DATE:        25 Jul 2026
+*  DATE:        26 Jul 2026
 *
 *  Native API support functions.
 *
@@ -270,6 +270,66 @@ BOOLEAN ntsupIsAddressValid(
 * Ronova port end.
 */
 
+/*
+* ntsupStrChrW
+*
+* Purpose:
+*
+* Returns a pointer to the first occurrence of Character in String
+* (including the terminator if Character is 0), or NULL if not found.
+*
+*/
+LPWSTR ntsupStrChrW(
+    _In_z_ LPCWSTR String,
+    _In_ WCHAR Character
+)
+{
+    while (*String != UNICODE_NULL) {
+        if (*String == Character)
+            return (LPWSTR)String;
+        String++;
+    }
+
+    if (Character == UNICODE_NULL)
+        return (LPWSTR)String;
+
+    return NULL;
+}
+
+/*
+* ntsupStrChrA
+*
+* Purpose:
+*
+* Returns a pointer to the first occurrence of Character in String 
+* (including the terminator if Character is 0), or NULL if not found.
+*
+*/
+LPSTR ntsupStrChrA(
+    _In_z_ LPCSTR String,
+    _In_ CHAR Character
+)
+{
+    while (*String != ANSI_NULL) {
+        if (*String == Character)
+            return (LPSTR)String;
+        String++;
+    }
+
+    if (Character == ANSI_NULL)
+        return (LPSTR)String;
+
+    return NULL;
+}
+
+/*
+* ntsupStrLenA
+*
+* Purpose:
+*
+* Returns the length, in characters, of a null-terminated ANSI string, or 0 if the pointer is NULL.
+*
+*/
 SIZE_T ntsupStrLenA(
     _In_opt_ LPCSTR String
 )
@@ -285,6 +345,14 @@ SIZE_T ntsupStrLenA(
     return (SIZE_T)(String - String0);
 }
 
+/*
+* ntsupStrLenW
+*
+* Purpose:
+*
+* Returns the length, in characters, of a null-terminated UTF-16 string, or 0 if the pointer is NULL.
+*
+*/
 SIZE_T ntsupStrLenW(
     _In_opt_ LPCWSTR String
 )
@@ -300,6 +368,14 @@ SIZE_T ntsupStrLenW(
     return (SIZE_T)(String - String0);
 }
 
+/*
+* ntsupStrCmpA
+*
+* Purpose:
+*
+* Performs a case-sensitive comparison of two null-terminated ANSI strings.
+*
+*/
 INT ntsupStrCmpA(
     _In_opt_ LPCSTR String1,
     _In_opt_ LPCSTR String2
@@ -326,6 +402,14 @@ INT ntsupStrCmpA(
     return (INT)(c1 - c2);
 }
 
+/*
+* ntsupStrCmpW
+*
+* Purpose:
+*
+* Performs a case-sensitive comparison of two null-terminated UTF-16 strings.
+*
+*/
 INT ntsupStrCmpW(
     _In_opt_ LPCWSTR String1,
     _In_opt_ LPCWSTR String2
@@ -352,6 +436,14 @@ INT ntsupStrCmpW(
     return (INT)(c1 - c2);
 }
 
+/*
+* ntsupStrCmpIA
+*
+* Purpose:
+*
+* Performs a case-insensitive comparison of two null-terminated ANSI strings.
+*
+*/
 INT ntsupStrCmpIA(
     _In_opt_ LPCSTR String1,
     _In_opt_ LPCSTR String2
@@ -378,6 +470,14 @@ INT ntsupStrCmpIA(
     return (INT)(c1 - c2);
 }
 
+/*
+* ntsupStrCmpIW
+*
+* Purpose:
+*
+* Performs a case-insensitive comparison of two null-terminated UTF-16 strings.
+*
+*/
 INT ntsupStrCmpIW(
     _In_opt_ LPCWSTR String1,
     _In_opt_ LPCWSTR String2
@@ -404,10 +504,81 @@ INT ntsupStrCmpIW(
     return (INT)(c1 - c2);
 }
 
-#pragma warning(push)
-#pragma warning(disable: 6101 6054)
+/*
+* ntsupStrCopyA
+*
+* Purpose:
+*
+* Copies a null-terminated ANSI string from Source to Destination 
+* (unbounded, caller-guaranteed capacity).
+*
+*/
+LPSTR ntsupStrCopyA(
+    _Out_writes_z_(_String_length_(Source) + 1) LPSTR Destination,
+    _In_z_ LPCSTR Source
+)
+{
+    LPSTR p;
+
+    if ((Destination == NULL) || (Source == NULL))
+        return Destination;
+
+    p = Destination;
+
+    while (*Source != ANSI_NULL) {
+        *p = *Source;
+        p++;
+        Source++;
+    }
+
+    *p = ANSI_NULL;
+
+    return Destination;
+}
+
+/*
+* ntsupStrCopyW
+*
+* Purpose:
+*
+* Copies a null-terminated wide-character (UTF-16) string from Source to Destination
+* (unbounded, caller-guaranteed capacity)
+*
+*/
+LPWSTR ntsupStrCopyW(
+    _Out_writes_z_(_String_length_(Source) + 1) LPWSTR Destination,
+    _In_z_ LPCWSTR Source
+)
+{
+    LPWSTR p;
+
+    if ((Destination == NULL) || (Source == NULL))
+        return Destination;
+
+    p = Destination;
+
+    while (*Source != UNICODE_NULL) {
+        *p = *Source;
+        p++;
+        Source++;
+    }
+
+    *p = UNICODE_NULL;
+
+    return Destination;
+}
+
+/*
+* ntsupStrNCopyA
+*
+* Purpose:
+*
+* Copies up to SourceCount characters from an ANSI source string 
+* into a fixed-size destination buffer, always null-terminating.
+*
+*/
 LPSTR ntsupStrNCopyA(
-    _Out_writes_(DestinationCount) LPSTR Destination,
+    _Out_writes_z_(DestinationCount) LPSTR Destination,
     _In_ SIZE_T DestinationCount,
     _In_reads_(SourceCount) LPCSTR Source,
     _In_ SIZE_T SourceCount
@@ -416,9 +587,6 @@ LPSTR ntsupStrNCopyA(
     LPSTR p;
 
     if ((Destination == NULL) || (Source == NULL) || (DestinationCount == 0))
-        return Destination;
-
-    if (Destination == Source)
         return Destination;
 
     DestinationCount--;
@@ -440,8 +608,17 @@ LPSTR ntsupStrNCopyA(
     return Destination;
 }
 
+/*
+* ntsupStrNCopyW
+*
+* Purpose:
+*
+* Copies up to SourceCount characters from a UTF-16 source string
+* into a fixed-size destination buffer, always null-terminating.
+*
+*/
 LPWSTR ntsupStrNCopyW(
-    _Out_writes_(DestinationCount) LPWSTR Destination,
+    _Out_writes_z_(DestinationCount) LPWSTR Destination,
     _In_ SIZE_T DestinationCount,
     _In_reads_(SourceCount) LPCWSTR Source,
     _In_ SIZE_T SourceCount
@@ -450,9 +627,6 @@ LPWSTR ntsupStrNCopyW(
     LPWSTR p;
 
     if ((Destination == NULL) || (Source == NULL) || (DestinationCount == 0))
-        return Destination;
-
-    if (Destination == Source)
         return Destination;
 
     DestinationCount--;
@@ -473,7 +647,6 @@ LPWSTR ntsupStrNCopyW(
 
     return Destination;
 }
-#pragma warning(pop)
 
 INT ntsupStrNCmpA(
     _In_opt_ LPCSTR String1,
@@ -612,7 +785,6 @@ LPCSTR ntsupStrStrIA(
 
     return NULL;
 }
-
 
 /*
 * ntsupStrStrIW
@@ -842,6 +1014,193 @@ LPWSTR ntsupStrCatExW(
 }
 
 /*
+* ntsupStrToUInt64A
+*
+* Purpose:
+*
+* Converts a decimal ANSI string to its ULONGLONG value.
+*
+*/
+BOOL ntsupStrToUInt64A(
+    _In_ LPCSTR String,
+    _Out_ PULONGLONG Value
+)
+{
+    ULONGLONG result = 0;
+    ULONGLONG digit;
+
+    *Value = 0;
+
+    if (!String || !*String)
+        return FALSE;
+
+    while (*String) {
+
+        if (!ntsupIsDigitA(*String))
+            return FALSE;
+
+        digit = (ULONGLONG)(*String - '0');
+
+        if (result > (ULLONG_MAX - digit) / 10)
+            return FALSE;
+
+        result = result * 10 + digit;
+        String++;
+    }
+
+    *Value = result;
+
+    return TRUE;
+}
+
+/*
+* ntsupStrToUInt64W
+*
+* Purpose:
+*
+* Converts a UTF-16 string to its ULONGLONG value.
+*
+*/
+BOOL ntsupStrToUInt64W(
+    _In_ LPCWSTR String,
+    _Out_ PULONGLONG Value
+)
+{
+    ULONGLONG result = 0;
+    ULONGLONG digit;
+
+    *Value = 0;
+
+    if (!String || !*String)
+        return FALSE;
+
+    while (*String) {
+
+        if (!ntsupIsDigitW(*String))
+            return FALSE;
+
+        digit = (ULONGLONG)(*String - L'0');
+
+        if (result > (ULLONG_MAX - digit) / 10)
+            return FALSE;
+
+        result = result * 10 + digit;
+        String++;
+    }
+
+    *Value = result;
+
+    return TRUE;
+}
+
+/*
+* ntsupUInt64ToStrW
+*
+* Purpose:
+*
+* Converts a ULONGLONG value to its UTF-16 string representation.
+*
+*/
+SIZE_T ntsupUInt64ToStrW(
+    _In_ ULONGLONG Value,
+    _Out_writes_z_(BufferCount) LPWSTR Buffer,
+    _In_ SIZE_T BufferCount
+)
+{
+    WCHAR temp[21];
+    SIZE_T length;
+    SIZE_T i;
+
+    if (!Buffer || BufferCount == 0)
+        return 0;
+
+    Buffer[0] = 0;
+
+    if (Value == 0) {
+        if (BufferCount < 2)
+            return 0;
+
+        Buffer[0] = L'0';
+        Buffer[1] = 0;
+        return 1;
+    }
+
+    length = 0;
+
+    while (Value != 0 && length < RTL_NUMBER_OF(temp)) {
+        temp[length++] = (WCHAR)(L'0' + (Value % 10));
+        Value /= 10;
+    }
+
+    if (Value != 0) //msvc shut up
+        return 0;
+
+    if ((length + 1) > BufferCount)
+        return 0;
+
+    for (i = 0; i < length; i++)
+        Buffer[i] = temp[length - i - 1];
+
+    Buffer[length] = 0;
+
+    return length;
+}
+
+/*
+* ntsupUInt64ToStrA
+*
+* Purpose:
+*
+* Converts a ULONGLONG value to its ANSI string representation.
+*
+*/
+SIZE_T ntsupUInt64ToStrA(
+    _In_ ULONGLONG Value,
+    _Out_writes_z_(BufferCount) LPSTR Buffer,
+    _In_ SIZE_T BufferCount
+)
+{
+    CHAR temp[21];
+    SIZE_T length;
+    SIZE_T i;
+
+    if (!Buffer || BufferCount == 0)
+        return 0;
+
+    Buffer[0] = 0;
+
+    if (Value == 0) {
+        if (BufferCount < 2)
+            return 0;
+
+        Buffer[0] = '0';
+        Buffer[1] = 0;
+
+        return 1;
+    }
+
+    length = 0;
+
+    while (Value != 0 && length < RTL_NUMBER_OF(temp)) {
+        temp[length++] = (CHAR)('0' + (Value % 10));
+        Value /= 10;
+    }
+
+    if (Value != 0) //msvc shut up
+        return 0;
+
+    if ((length + 1) > BufferCount)
+        return 0;
+
+    for (i = 0; i < length; i++)
+        Buffer[i] = temp[length - i - 1];
+
+    Buffer[length] = 0;
+
+    return length;
+}
+
+/*
 * ntsupHeapAlloc
 *
 * Purpose:
@@ -869,6 +1228,9 @@ PVOID ntsupHeapReAlloc(
     _In_ SIZE_T Size
 )
 {
+    if (BaseAddress == NULL)
+        return ntsupHeapAlloc(Size);
+
     return RtlReAllocateHeap(RtlProcessHeap(), HEAP_ZERO_MEMORY, BaseAddress, Size);
 }
 
