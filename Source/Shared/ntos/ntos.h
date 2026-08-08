@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.250
+*  VERSION:     1.251
 *
-*  DATE:        23 Jul 2026
+*  DATE:        08 Aug 2026
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -5790,6 +5790,7 @@ typedef enum _MEMORY_INFORMATION_CLASS {
     MemoryPhysicalContiguityInformation,
     MemoryBadInformation,
     MemoryBadInformationAllProcesses,
+    MemoryImageExtensionInformation,
     MaxMemoryInfoClass
 } MEMORY_INFORMATION_CLASS, *PMEMORY_INFORMATION_CLASS;
 
@@ -5967,6 +5968,19 @@ typedef struct _MEMORY_WORKING_SET_EX_INFORMATION {
         ULONG_PTR Long;
     } u1;
 } MEMORY_WORKING_SET_EX_INFORMATION, * PMEMORY_WORKING_SET_EX_INFORMATION;
+
+typedef enum _MEMORY_IMAGE_EXTENSION_TYPE {
+    MemoryImageExtensionCfgScp,
+    MemoryImageExtensionCfgEmulatedScp,
+    MemoryImageExtensionTypeMax,
+} MEMORY_IMAGE_EXTENSION_TYPE;
+
+typedef struct _MEMORY_IMAGE_EXTENSION_INFORMATION {
+    MEMORY_IMAGE_EXTENSION_TYPE ExtensionType;
+    ULONG Flags;
+    PVOID ExtensionImageBaseRva;
+    SIZE_T ExtensionSize;
+} MEMORY_IMAGE_EXTENSION_INFORMATION, * PMEMORY_IMAGE_EXTENSION_INFORMATION;
 
 #define MM_ZERO_ACCESS         0  // this value is not used.
 #define MM_READONLY            1
@@ -11673,6 +11687,14 @@ typedef struct _EVENT_DESCRIPTOR {
     ULONGLONG Keyword;
 } EVENT_DESCRIPTOR, * PEVENT_DESCRIPTOR;
 typedef const EVENT_DESCRIPTOR* PCEVENT_DESCRIPTOR;
+
+typedef enum _EVENT_INFO_CLASS {
+    EventProviderBinaryTrackInfo,
+    EventProviderSetReserved1,
+    EventProviderSetTraits,
+    EventProviderUseDescriptorType,
+    MaxEventInfo
+} EVENT_INFO_CLASS;
 #endif
 
 typedef struct _EVENT_FILTER_DESCRIPTOR* PEVENT_FILTER_DESCRIPTOR;

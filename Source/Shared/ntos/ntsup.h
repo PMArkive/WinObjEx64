@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTSUP.H
 *
-*  VERSION:     2.31
+*  VERSION:     2.32
 *
-*  DATE:        26 Jul 2026
+*  DATE:        28 Jul 2026
 *
 *  Common header file for the NT API support functions and definitions.
 *
@@ -125,6 +125,20 @@ VOID ntsupSha256Final(
 //
 // Ronova requires get rid of minirtl.
 //
+FORCEINLINE INT ntsupHexDigitToInt(
+    _In_ UINT ch
+)
+{
+    if ((ch >= '0') && (ch <= '9'))
+        return (INT)(ch - '0');
+
+    ch = (UINT)((ch >= 'A' && ch <= 'Z') ? (ch + ('a' - 'A')) : ch);
+
+    if ((ch >= 'a') && (ch <= 'f'))
+        return (INT)(ch - 'a' + 10);
+
+    return -1;
+}
 
 FORCEINLINE BOOLEAN ntsupIsDigitA(
     _In_ CHAR Ch
@@ -255,6 +269,11 @@ SIZE_T ntsupUInt64ToStrA(
     _Out_writes_z_(BufferCount) LPSTR Buffer,
     _In_ SIZE_T BufferCount);
 
+ULONGLONG ntsupHexToUInt64A(
+    _In_opt_ LPCSTR String);
+ULONGLONG ntsupHexToUInt64W(
+    _In_opt_ LPCWSTR String);
+
 #ifdef _UNICODE
 #define ntsupLowerChar ntsupLowerCharW
 #define ntsupStrChr ntsupStrChrW
@@ -269,6 +288,7 @@ SIZE_T ntsupUInt64ToStrA(
 #define ntsupStrCatEx ntsupStrCatExW
 #define ntsupStrToUInt64 ntsupStrToUInt64W
 #define ntsupUInt64ToStr ntsupUInt64ToStrW
+#define ntsupHexToUInt64 ntsupHexToUInt64W
 #else
 #define ntsupLowerChar ntsupLowerCharA
 #define ntsupStrChr ntsupStrChrA
@@ -283,6 +303,7 @@ SIZE_T ntsupUInt64ToStrA(
 #define ntsupStrCatEx ntsupStrCatExA
 #define ntsupStrToUInt64 ntsupStrToUInt64A
 #define ntsupUInt64ToStr ntsupUInt64ToStrA
+#define ntsupHexToUInt64 ntsupHexToUInt64A
 #endif
 
 //

@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTSUP.C
 *
-*  VERSION:     2.31
+*  VERSION:     2.32
 *
-*  DATE:        26 Jul 2026
+*  DATE:        28 Jul 2026
 *
 *  Native API support functions.
 *
@@ -1198,6 +1198,68 @@ SIZE_T ntsupUInt64ToStrA(
     Buffer[length] = 0;
 
     return length;
+}
+
+/*
+* ntsupHexToUInt64A
+*
+* Purpose:
+*
+* Converts a ANSI hexademical string to the ULONGLONG value.
+*
+*/
+ULONGLONG ntsupHexToUInt64A(
+    _In_opt_ LPCSTR String
+)
+{
+    INT digit;
+    ULONGLONG value = 0;
+
+    if (!String)
+        return 0;
+
+    while (*String) {
+
+        digit = ntsupHexDigitToInt((UCHAR)*String);
+        if (digit < 0)
+            break;
+
+        value = (value << 4) | (ULONG)digit;
+        String++;
+    }
+
+    return value;
+}
+
+/*
+* ntsupHexToUInt64W
+*
+* Purpose:
+*
+* Converts a UTF-16 hexademical string to the ULONGLONG value.
+*
+*/
+ULONGLONG ntsupHexToUInt64W(
+    _In_opt_ LPCWSTR String
+)
+{
+    INT digit;
+    ULONGLONG value = 0;
+
+    if (!String)
+        return 0;
+
+    while (*String) {
+
+        digit = ntsupHexDigitToInt((WCHAR)*String);
+        if (digit < 0)
+            break;
+
+        value = (value << 4) | (ULONG)digit;
+        String++;
+    }
+
+    return value;
 }
 
 /*
