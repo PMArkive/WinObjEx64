@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.251
+*  VERSION:     1.252
 *
-*  DATE:        08 Aug 2026
+*  DATE:        12 Aug 2026
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -759,8 +759,46 @@ typedef struct _VM_COUNTERS {
     SIZE_T QuotaNonPagedPoolUsage;
     SIZE_T PagefileUsage;
     SIZE_T PeakPagefileUsage;
-    SIZE_T PrivatePageCount;
-} VM_COUNTERS;
+} VM_COUNTERS, *PVM_COUNTERS;
+
+typedef struct _VM_COUNTERS_EX {
+    SIZE_T PeakVirtualSize;             
+    SIZE_T VirtualSize;                 
+    ULONG PageFaultCount;               
+    SIZE_T PeakWorkingSetSize;          
+    SIZE_T WorkingSetSize;              
+    SIZE_T QuotaPeakPagedPoolUsage;     
+    SIZE_T QuotaPagedPoolUsage;         
+    SIZE_T QuotaPeakNonPagedPoolUsage;  
+    SIZE_T QuotaNonPagedPoolUsage;      
+    SIZE_T PagefileUsage;               
+    SIZE_T PeakPagefileUsage;           
+    SIZE_T PrivateUsage;                
+} VM_COUNTERS_EX, * PVM_COUNTERS_EX;
+
+typedef struct _VM_COUNTERS_EX2 {
+    union
+    {
+        VM_COUNTERS_EX CountersEx;
+        struct
+        {
+            SIZE_T PeakVirtualSize;             
+            SIZE_T VirtualSize;                 
+            ULONG PageFaultCount;               
+            SIZE_T PeakWorkingSetSize;          
+            SIZE_T WorkingSetSize;              
+            SIZE_T QuotaPeakPagedPoolUsage;     
+            SIZE_T QuotaPagedPoolUsage;         
+            SIZE_T QuotaPeakNonPagedPoolUsage;  
+            SIZE_T QuotaNonPagedPoolUsage;      
+            SIZE_T PagefileUsage;               
+            SIZE_T PeakPagefileUsage;           
+            SIZE_T PrivateUsage;                
+        };
+    };
+    SIZE_T PrivateWorkingSetSize;               
+    SIZE_T SharedCommitUsage;                   
+} VM_COUNTERS_EX2, * PVM_COUNTERS_EX2;
 
 typedef struct _SYSTEM_THREAD_INFORMATION {
     LARGE_INTEGER KernelTime;
@@ -804,8 +842,24 @@ typedef struct _SYSTEM_PROCESS_INFORMATION {
     ULONG HandleCount;
     ULONG SessionId;
     ULONG_PTR UniqueProcessKey;
-    VM_COUNTERS VmCounters;
-    IO_COUNTERS IoCounters;
+    SIZE_T PeakVirtualSize;                    
+    SIZE_T VirtualSize;                        
+    ULONG PageFaultCount;                      
+    SIZE_T PeakWorkingSetSize;                 
+    SIZE_T WorkingSetSize;                     
+    SIZE_T QuotaPeakPagedPoolUsage;            
+    SIZE_T QuotaPagedPoolUsage;                
+    SIZE_T QuotaPeakNonPagedPoolUsage;         
+    SIZE_T QuotaNonPagedPoolUsage;             
+    SIZE_T PagefileUsage;                      
+    SIZE_T PeakPagefileUsage;                  
+    SIZE_T PrivatePageCount;                   
+    LARGE_INTEGER ReadOperationCount;          
+    LARGE_INTEGER WriteOperationCount;         
+    LARGE_INTEGER OtherOperationCount;         
+    LARGE_INTEGER ReadTransferCount;           
+    LARGE_INTEGER WriteTransferCount;          
+    LARGE_INTEGER OtherTransferCount;           
     SYSTEM_THREAD_INFORMATION Threads[1]; //not a part of this structure
 } SYSTEM_PROCESS_INFORMATION, *PSYSTEM_PROCESS_INFORMATION;
 
@@ -927,6 +981,91 @@ typedef struct _SYSTEM_BASIC_INFORMATION {
     CCHAR NumberOfProcessors;
 } SYSTEM_BASIC_INFORMATION, *PSYSTEM_BASIC_INFORMATION;
 
+typedef struct _SYSTEM_PERFORMANCE_INFORMATION {
+    LARGE_INTEGER IdleProcessTime;
+    LARGE_INTEGER IoReadTransferCount;
+    LARGE_INTEGER IoWriteTransferCount;
+    LARGE_INTEGER IoOtherTransferCount;
+    ULONG IoReadOperationCount;
+    ULONG IoWriteOperationCount;
+    ULONG IoOtherOperationCount;
+    ULONG AvailablePages;
+    ULONG CommittedPages;
+    ULONG CommitLimit;
+    ULONG PeakCommitment;
+    ULONG PageFaultCount;
+    ULONG CopyOnWriteCount;
+    ULONG TransitionCount;
+    ULONG CacheTransitionCount;
+    ULONG DemandZeroCount;
+    ULONG PageReadCount;
+    ULONG PageReadIoCount;
+    ULONG CacheReadCount;
+    ULONG CacheIoCount;
+    ULONG DirtyPagesWriteCount;
+    ULONG DirtyWriteIoCount;
+    ULONG MappedPagesWriteCount;
+    ULONG MappedWriteIoCount;
+    ULONG PagedPoolPages;
+    ULONG NonPagedPoolPages;
+    ULONG PagedPoolAllocs;
+    ULONG PagedPoolFrees;
+    ULONG NonPagedPoolAllocs;
+    ULONG NonPagedPoolFrees;
+    ULONG FreeSystemPtes;
+    ULONG ResidentSystemCodePage;
+    ULONG TotalSystemDriverPages;
+    ULONG TotalSystemCodePages;
+    ULONG NonPagedPoolLookasideHits;
+    ULONG PagedPoolLookasideHits;
+    ULONG AvailablePagedPoolPages;
+    ULONG ResidentSystemCachePage;
+    ULONG ResidentPagedPoolPage;
+    ULONG ResidentSystemDriverPage;
+    ULONG CcFastReadNoWait;
+    ULONG CcFastReadWait;
+    ULONG CcFastReadResourceMiss;
+    ULONG CcFastReadNotPossible;
+    ULONG CcFastMdlReadNoWait;
+    ULONG CcFastMdlReadWait;
+    ULONG CcFastMdlReadResourceMiss;
+    ULONG CcFastMdlReadNotPossible;
+    ULONG CcMapDataNoWait;
+    ULONG CcMapDataWait;
+    ULONG CcMapDataNoWaitMiss;
+    ULONG CcMapDataWaitMiss;
+    ULONG CcPinMappedDataCount;
+    ULONG CcPinReadNoWait;
+    ULONG CcPinReadWait;
+    ULONG CcPinReadNoWaitMiss;
+    ULONG CcPinReadWaitMiss;
+    ULONG CcCopyReadNoWait;
+    ULONG CcCopyReadWait;
+    ULONG CcCopyReadNoWaitMiss;
+    ULONG CcCopyReadWaitMiss;
+    ULONG CcMdlReadNoWait;
+    ULONG CcMdlReadWait;
+    ULONG CcMdlReadNoWaitMiss;
+    ULONG CcMdlReadWaitMiss;
+    ULONG CcReadAheadIos;
+    ULONG CcLazyWriteIos;
+    ULONG CcLazyWritePages;
+    ULONG CcDataFlushes;
+    ULONG CcDataPages;
+    ULONG ContextSwitches;
+    ULONG FirstLevelTbFills;
+    ULONG SecondLevelTbFills;
+    ULONG SystemCalls;
+    ULONGLONG CcTotalDirtyPages;
+    ULONGLONG CcDirtyPageThreshold;
+    LONGLONG ResidentAvailablePages;
+    ULONGLONG SharedCommittedPages;
+    ULONGLONG MdlPagesAllocated;
+    ULONGLONG PfnDatabaseCommittedPages;
+    ULONGLONG SystemPageTableCommittedPages;
+    ULONGLONG ContiguousPagesAllocated;
+} SYSTEM_PERFORMANCE_INFORMATION, * PSYSTEM_PERFORMANCE_INFORMATION;
+
 typedef struct _SYSTEM_ISOLATED_USER_MODE_INFORMATION {
     BOOLEAN SecureKernelRunning : 1;
     BOOLEAN HvciEnabled : 1;
@@ -1020,6 +1159,25 @@ typedef struct _SYSTEM_BIGPOOL_INFORMATION {
 typedef struct _SYSTEM_FIRMWARE_PARTITION_INFORMATION {
     UNICODE_STRING FirmwarePartition; // \Device\HarddiskX
 } SYSTEM_FIRMWARE_PARTITION_INFORMATION, * PSYSTEM_FIRMWARE_PARTITION_INFORMATION;
+
+typedef struct _SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION {
+    LARGE_INTEGER IdleTime;
+    LARGE_INTEGER KernelTime;
+    LARGE_INTEGER UserTime;
+    LARGE_INTEGER DpcTime;
+    LARGE_INTEGER InterruptTime;
+    ULONG InterruptCount;
+    ULONG Spare0;
+} SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION, * PSYSTEM_PROCESSOR_PERFORMANCE_INFORMATION;
+
+_Struct_size_bytes_(NextEntryOffset)
+typedef struct _SYSTEM_PAGEFILE_INFORMATION {
+    ULONG NextEntryOffset;
+    ULONG TotalSize;
+    ULONG TotalInUse;
+    ULONG PeakUsage;
+    UNICODE_STRING PageFileName;
+} SYSTEM_PAGEFILE_INFORMATION, * PSYSTEM_PAGEFILE_INFORMATION;
 
 typedef struct _RTL_PROCESS_BACKTRACE_INFORMATION {
     PCHAR SymbolicBackTrace;
@@ -11122,6 +11280,132 @@ RtlCaptureStackBackTrace(
     _In_ ULONG FramesToCapture,
     _Out_writes_to_(FramesToCapture, return) PVOID* BackTrace,
     _Out_opt_ PULONG BackTraceHash);
+
+typedef struct _RTL_PROCESS_MODULES* PRTL_PROCESS_MODULES;
+typedef struct _RTL_PROCESS_MODULE_INFORMATION_EX* PRTL_PROCESS_MODULE_INFORMATION_EX;
+typedef struct _RTL_PROCESS_BACKTRACES* PRTL_PROCESS_BACKTRACES;
+typedef struct _RTL_PROCESS_LOCKS* PRTL_PROCESS_LOCKS;
+
+typedef struct _RTL_PROCESS_VERIFIER_OPTIONS {
+    ULONG SizeStruct;
+    ULONG Option;
+    UCHAR OptionData[1];
+} RTL_PROCESS_VERIFIER_OPTIONS, * PRTL_PROCESS_VERIFIER_OPTIONS;
+
+typedef struct _RTL_DEBUG_INFORMATION {
+    HANDLE SectionHandleClient;
+    PVOID ViewBaseClient;
+    PVOID ViewBaseTarget;
+    ULONG_PTR ViewBaseDelta;
+    HANDLE EventPairClient;
+    HANDLE EventPairTarget;
+    HANDLE TargetProcessId;
+    HANDLE TargetThreadHandle;
+    ULONG Flags;
+    SIZE_T OffsetFree;
+    SIZE_T CommitSize;
+    SIZE_T ViewSize;
+    union
+    {
+        PRTL_PROCESS_MODULES Modules;
+        PRTL_PROCESS_MODULE_INFORMATION_EX ModulesEx;
+    };
+    PRTL_PROCESS_BACKTRACES BackTraces;
+    PVOID Heaps;
+    PRTL_PROCESS_LOCKS Locks;
+    PVOID SpecificHeap;
+    HANDLE TargetProcessHandle;
+    PRTL_PROCESS_VERIFIER_OPTIONS VerifierOptions;
+    PVOID ProcessHeap;
+    HANDLE CriticalSectionHandle;
+    HANDLE CriticalSectionOwnerThread;
+    PVOID Reserved[4];
+} RTL_DEBUG_INFORMATION, * PRTL_DEBUG_INFORMATION;
+
+NTSYSAPI
+PRTL_DEBUG_INFORMATION
+NTAPI
+RtlCreateQueryDebugBuffer(
+    _In_opt_ ULONG MaximumCommit,
+    _In_ BOOLEAN UseEventPair);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlDestroyQueryDebugBuffer(
+    _In_ PRTL_DEBUG_INFORMATION Buffer);
+
+#define RTL_QUERY_PROCESS_MODULES 0x00000001
+#define RTL_QUERY_PROCESS_BACKTRACES 0x00000002
+#define RTL_QUERY_PROCESS_HEAP_SUMMARY 0x00000004 
+#define RTL_QUERY_PROCESS_HEAP_TAGS 0x00000008
+#define RTL_QUERY_PROCESS_HEAP_ENTRIES 0x00000010 
+#define RTL_QUERY_PROCESS_LOCKS 0x00000020
+#define RTL_QUERY_PROCESS_MODULES32 0x00000040 
+#define RTL_QUERY_PROCESS_VERIFIER_OPTIONS 0x00000080 
+#define RTL_QUERY_PROCESS_MODULESEX 0x00000100 
+#define RTL_QUERY_PROCESS_HEAP_SEGMENTS 0x00000200 
+#define RTL_QUERY_PROCESS_CS_OWNER 0x00000400 
+#define RTL_QUERY_PROCESS_USE_CURRENT_PROCESS 0x40000000 
+#define RTL_QUERY_PROCESS_NONINVASIVE 0x80000000 
+#define RTL_QUERY_PROCESS_NONINVASIVE_CS_OWNER 0x80000800 
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlQueryProcessDebugInformation(
+    _In_ HANDLE UniqueProcessId,
+    _In_ ULONG Flags,
+    _Inout_ PRTL_DEBUG_INFORMATION Buffer);
+
+// Windows 7/8/10
+typedef struct _RTL_HEAP_INFORMATION_V1 {
+    PVOID BaseAddress;
+    ULONG Flags;
+    USHORT EntryOverhead;
+    USHORT CreatorBackTraceIndex;
+    SIZE_T BytesAllocated;
+    SIZE_T BytesCommitted;
+    ULONG NumberOfTags;
+    ULONG NumberOfEntries;
+    ULONG NumberOfPseudoTags;
+    ULONG PseudoTagGranularity;
+    ULONG Reserved[5];
+    PVOID Tags;
+    PVOID Entries;
+} RTL_HEAP_INFORMATION_V1, * PRTL_HEAP_INFORMATION_V1;
+
+// Windows 11 > 22000
+typedef struct _RTL_HEAP_INFORMATION_V2 {
+    PVOID BaseAddress;
+    ULONG Flags;
+    USHORT EntryOverhead;
+    USHORT CreatorBackTraceIndex;
+    SIZE_T BytesAllocated;
+    SIZE_T BytesCommitted;
+    ULONG NumberOfTags;
+    ULONG NumberOfEntries;
+    ULONG NumberOfPseudoTags;
+    ULONG PseudoTagGranularity;
+    ULONG Reserved[5];
+    PVOID Tags;
+    PVOID Entries;
+    ULONG64 HeapTag;
+} RTL_HEAP_INFORMATION_V2, * PRTL_HEAP_INFORMATION_V2;
+
+#define RTL_HEAP_SIGNATURE 0xFFEEFFEEUL
+#define RTL_HEAP_SEGMENT_SIGNATURE 0xDDEEDDEEUL
+
+typedef struct _RTL_PROCESS_HEAPS_V1 {
+    ULONG NumberOfHeaps;
+    _Field_size_(NumberOfHeaps) RTL_HEAP_INFORMATION_V1 Heaps[1];
+} RTL_PROCESS_HEAPS_V1, * PRTL_PROCESS_HEAPS_V1;
+
+typedef struct _RTL_PROCESS_HEAPS_V2 {
+    ULONG NumberOfHeaps;
+    _Field_size_(NumberOfHeaps) RTL_HEAP_INFORMATION_V2 Heaps[1];
+} RTL_PROCESS_HEAPS_V2, * PRTL_PROCESS_HEAPS_V2;
+
 
 /************************************************************************************
 *

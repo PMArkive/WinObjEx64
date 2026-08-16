@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTSUP.C
 *
-*  VERSION:     2.32
+*  VERSION:     2.33
 *
-*  DATE:        28 Jul 2026
+*  DATE:        12 Aug 2026
 *
 *  Native API support functions.
 *
@@ -220,7 +220,7 @@ VOID ntsupSha256Final(
 * - Requested size fits completely inside the queried memory region.
 *
 */
-BOOLEAN ntsupIsAddressValid(
+BOOLEAN NTAPI ntsupIsAddressValid(
     _In_ PVOID Address,
     _In_ SIZE_T Size
 )
@@ -301,7 +301,7 @@ LPWSTR ntsupStrChrW(
 *
 * Purpose:
 *
-* Returns a pointer to the first occurrence of Character in String 
+* Returns a pointer to the first occurrence of Character in String
 * (including the terminator if Character is 0), or NULL if not found.
 *
 */
@@ -509,7 +509,7 @@ INT ntsupStrCmpIW(
 *
 * Purpose:
 *
-* Copies a null-terminated ANSI string from Source to Destination 
+* Copies a null-terminated ANSI string from Source to Destination
 * (unbounded, caller-guaranteed capacity).
 *
 */
@@ -573,7 +573,7 @@ LPWSTR ntsupStrCopyW(
 *
 * Purpose:
 *
-* Copies up to SourceCount characters from an ANSI source string 
+* Copies up to SourceCount characters from an ANSI source string
 * into a fixed-size destination buffer, always null-terminating.
 *
 */
@@ -1270,7 +1270,7 @@ ULONGLONG ntsupHexToUInt64W(
 * Wrapper for RtlAllocateHeap with process heap.
 *
 */
-PVOID ntsupHeapAlloc(
+PVOID NTAPI ntsupHeapAlloc(
     _In_ SIZE_T Size
 )
 {
@@ -1278,14 +1278,14 @@ PVOID ntsupHeapAlloc(
 }
 
 /*
- * ntsupHeapReAlloc
- *
- * Purpose:
- *
- * Wrapper for RtlReAllocateHeap with process heap.
- *
- */
-PVOID ntsupHeapReAlloc(
+* ntsupHeapReAlloc
+*
+* Purpose:
+*
+* Wrapper for RtlReAllocateHeap with process heap.
+*
+*/
+PVOID NTAPI ntsupHeapReAlloc(
     _In_ PVOID BaseAddress,
     _In_ SIZE_T Size
 )
@@ -1304,7 +1304,7 @@ PVOID ntsupHeapReAlloc(
 * Wrapper for RtlFreeHeap with process heap.
 *
 */
-BOOL ntsupHeapFree(
+BOOL NTAPI ntsupHeapFree(
     _In_ PVOID BaseAddress
 )
 {
@@ -1312,14 +1312,14 @@ BOOL ntsupHeapFree(
 }
 
 /*
- * ntsupHeapSize
- *
- * Purpose:
- *
- * Wrapper for RtlSizeHeap with process heap.
- *
- */
-SIZE_T ntsupHeapSize(
+* ntsupHeapSize
+*
+* Purpose:
+*
+* Wrapper for RtlSizeHeap with process heap.
+*
+*/
+SIZE_T NTAPI ntsupHeapSize(
     _In_ PVOID BaseAddress
 )
 {
@@ -1327,14 +1327,14 @@ SIZE_T ntsupHeapSize(
 }
 
 /*
- * ntsupHeapValidate
- *
- * Purpose:
- *
- * Wrapper for RtlValidateHeap with process heap.
- *
- */
-BOOL ntsupHeapValidate(
+* ntsupHeapValidate
+*
+* Purpose:
+*
+* Wrapper for RtlValidateHeap with process heap.
+*
+*/
+BOOL NTAPI ntsupHeapValidate(
     _In_ PVOID BaseAddress
 )
 {
@@ -1342,14 +1342,14 @@ BOOL ntsupHeapValidate(
 }
 
 /*
- * ntsupHeapCompact
- *
- * Purpose:
- *
- * Wrapper for RtlCompactHeap with process heap.
- *
- */
-SIZE_T ntsupHeapCompact(
+* ntsupHeapCompact
+*
+* Purpose:
+*
+* Wrapper for RtlCompactHeap with process heap.
+*
+*/
+SIZE_T NTAPI ntsupHeapCompact(
     VOID
 )
 {
@@ -1357,14 +1357,14 @@ SIZE_T ntsupHeapCompact(
 }
 
 /*
- * ntsupHeapLock
- *
- * Purpose:
- *
- * Wrapper for RtlLockHeap with process heap.
- *
- */
-BOOL ntsupHeapLock(
+* ntsupHeapLock
+*
+* Purpose:
+*
+* Wrapper for RtlLockHeap with process heap.
+*
+*/
+BOOL NTAPI ntsupHeapLock(
     VOID
 )
 {
@@ -1372,14 +1372,14 @@ BOOL ntsupHeapLock(
 }
 
 /*
- * ntsupHeapUnlock
- *
- * Purpose:
- *
- * Wrapper for RtlUnlockHeap with process heap.
- *
- */
-BOOL ntsupHeapUnlock(
+* ntsupHeapUnlock
+*
+* Purpose:
+*
+* Wrapper for RtlUnlockHeap with process heap.
+*
+*/
+BOOL NTAPI ntsupHeapUnlock(
     VOID
 )
 {
@@ -1394,7 +1394,7 @@ BOOL ntsupHeapUnlock(
 * Wrapper for ntsupVirtualAllocEx with standard parameters.
 *
 */
-PVOID ntsupVirtualAllocEx(
+PVOID NTAPI ntsupVirtualAllocEx(
     _In_ SIZE_T Size,
     _In_ ULONG AllocationType,
     _In_ ULONG Protect)
@@ -1428,7 +1428,7 @@ PVOID ntsupVirtualAllocEx(
 * Wrapper for supVirtualAllocEx.
 *
 */
-PVOID ntsupVirtualAlloc(
+PVOID NTAPI ntsupVirtualAlloc(
     _In_ SIZE_T Size)
 {
     return ntsupVirtualAllocEx(Size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -1442,7 +1442,7 @@ PVOID ntsupVirtualAlloc(
 * Wrapper for NtLockVirtualMemory.
 *
 */
-BOOL ntsupVirtualLock(
+BOOL NTAPI ntsupVirtualLock(
     _In_ LPVOID lpAddress,
     _In_ SIZE_T dwSize
 )
@@ -1461,7 +1461,7 @@ BOOL ntsupVirtualLock(
 * Wrapper for NtUnlockVirtualMemory.
 *
 */
-BOOL ntsupVirtualUnlock(
+BOOL NTAPI ntsupVirtualUnlock(
     _In_ LPVOID lpAddress,
     _In_ SIZE_T dwSize
 )
@@ -1480,7 +1480,7 @@ BOOL ntsupVirtualUnlock(
 * Wrapper for NtFreeVirtualMemory.
 *
 */
-BOOL ntsupVirtualFree(
+BOOL NTAPI ntsupVirtualFree(
     _In_ PVOID Memory)
 {
     NTSTATUS ntStatus = STATUS_UNSUCCESSFUL;
@@ -1510,7 +1510,7 @@ BOOL ntsupVirtualFree(
 * Create new file (or open existing) and write buffer to it.
 *
 */
-SIZE_T ntsupWriteBufferToFile(
+SIZE_T NTAPI ntsupWriteBufferToFile(
     _In_ PCWSTR FileName,
     _In_ PVOID Buffer,
     _In_ SIZE_T Size,
@@ -1617,7 +1617,7 @@ SIZE_T ntsupWriteBufferToFile(
             NtClose(hFile);
         }
         RtlFreeUnicodeString(&ntFileName);
-        if (Result) *Result = ntStatus;
+        if (Result)*Result = ntStatus;
     }
     return bytesWritten;
 }
@@ -1630,7 +1630,7 @@ SIZE_T ntsupWriteBufferToFile(
 * Find Module entry for given name.
 *
 */
-PVOID ntsupFindModuleEntryByName(
+PVOID NTAPI ntsupFindModuleEntryByName(
     _In_ PRTL_PROCESS_MODULES ModulesList,
     _In_ LPCSTR ModuleName
 )
@@ -1659,7 +1659,7 @@ PVOID ntsupFindModuleEntryByName(
 * Find Module entry for given name.
 *
 */
-PVOID ntsupFindModuleEntryByName_U(
+PVOID NTAPI ntsupFindModuleEntryByName_U(
     _In_ PRTL_PROCESS_MODULES ModulesList,
     _In_ LPCWSTR ModuleName
 )
@@ -1703,7 +1703,7 @@ PVOID ntsupFindModuleEntryByName_U(
 * Returns module entry if found, NULL otherwise.
 *
 */
-BOOL ntsupFindModuleEntryByAddress(
+BOOL NTAPI ntsupFindModuleEntryByAddress(
     _In_ PRTL_PROCESS_MODULES ModulesList,
     _In_ PVOID Address,
     _Out_ PULONG ModuleIndex
@@ -1733,7 +1733,7 @@ BOOL ntsupFindModuleEntryByAddress(
 * Get Module Entry for given Address.
 *
 */
-PVOID ntsupGetModuleEntryByAddress(
+PVOID NTAPI ntsupGetModuleEntryByAddress(
     _In_ PRTL_PROCESS_MODULES ModulesList,
     _In_ PVOID Address
 )
@@ -1759,7 +1759,7 @@ PVOID ntsupGetModuleEntryByAddress(
 * Find Module Name for given Address.
 *
 */
-PVOID ntsupFindModuleNameByAddress(
+PVOID NTAPI ntsupFindModuleNameByAddress(
     _In_ PRTL_PROCESS_MODULES ModulesList,
     _In_ PVOID Address,
     _Inout_	LPWSTR Buffer,
@@ -1824,7 +1824,7 @@ PVOID ntsupFindModuleNameByAddress(
 * If function succeeded - use RtlFreeUnicodeString to release allocated string.
 *
 */
-NTSTATUS ntsupConvertToUnicode(
+NTSTATUS NTAPI ntsupConvertToUnicode(
     _In_ LPCSTR AnsiString,
     _Inout_ PUNICODE_STRING UnicodeString)
 {
@@ -1845,7 +1845,7 @@ NTSTATUS ntsupConvertToUnicode(
 * If function succeeded - use RtlFreeAnsiString to release allocated string.
 *
 */
-NTSTATUS ntsupConvertToAnsi(
+NTSTATUS NTAPI ntsupConvertToAnsi(
     _In_ LPCWSTR UnicodeString,
     _Inout_ PANSI_STRING AnsiString)
 {
@@ -1863,7 +1863,7 @@ NTSTATUS ntsupConvertToAnsi(
 * Adjust privilege for the token.
 *
 */
-NTSTATUS ntsupSetPrivilege(
+NTSTATUS NTAPI ntsupSetPrivilege(
     _In_ HANDLE TokenHandle,
     _In_ DWORD Privilege,
     _In_ BOOLEAN Enable,
@@ -1914,7 +1914,7 @@ NTSTATUS ntsupSetPrivilege(
 * Return FALSE on any error.
 *
 */
-BOOLEAN ntsupEnablePrivilege(
+BOOLEAN NTAPI ntsupEnablePrivilege(
     _In_ DWORD Privilege,
     _In_ BOOLEAN Enable
 )
@@ -1954,7 +1954,7 @@ BOOLEAN ntsupEnablePrivilege(
 * Return current process token value with TOKEN_QUERY access right.
 *
 */
-HANDLE ntsupGetCurrentProcessToken(
+HANDLE NTAPI ntsupGetCurrentProcessToken(
     VOID)
 {
     HANDLE tokenHandle = NULL;
@@ -1977,7 +1977,7 @@ HANDLE ntsupGetCurrentProcessToken(
 * Return MmSystemRangeStart value.
 *
 */
-ULONG_PTR ntsupQuerySystemRangeStart(
+ULONG_PTR NTAPI ntsupQuerySystemRangeStart(
     VOID
 )
 {
@@ -2005,7 +2005,7 @@ ULONG_PTR ntsupQuerySystemRangeStart(
 * Return user mode applications accessible address range.
 *
 */
-BOOLEAN ntsupQueryUserModeAccessibleRange(
+BOOLEAN NTAPI ntsupQueryUserModeAccessibleRange(
     _Out_ PULONG_PTR MinimumUserModeAddress,
     _Out_ PULONG_PTR MaximumUserModeAddress
 )
@@ -2047,7 +2047,7 @@ BOOLEAN ntsupQueryUserModeAccessibleRange(
 * Perform check if the kernel debugger active.
 *
 */
-BOOLEAN ntsupIsKdEnabled(
+BOOLEAN NTAPI ntsupIsKdEnabled(
     _Out_opt_ PBOOLEAN DebuggerAllowed,
     _Out_opt_ PBOOLEAN DebuggerNotPresent
 )
@@ -2114,7 +2114,7 @@ BOOLEAN ntsupIsKdEnabled(
 * Return TRUE if process is wow64.
 *
 */
-BOOL ntsupIsProcess32bit(
+BOOL NTAPI ntsupIsProcess32bit(
     _In_ HANDLE hProcess
 )
 {
@@ -2145,7 +2145,7 @@ BOOL ntsupIsProcess32bit(
 * Read list of loaded kernel modules.
 *
 */
-PVOID ntsupGetLoadedModulesListEx(
+PVOID NTAPI ntsupGetLoadedModulesListEx(
     _In_ BOOL ExtendedOutput,
     _Out_opt_ PULONG ReturnLength,
     _In_ PNTSUPMEMALLOC AllocMem,
@@ -2229,7 +2229,7 @@ PVOID ntsupGetLoadedModulesListEx(
 * Returned buffer must be freed with ntsupHeapFree after usage.
 *
 */
-PVOID ntsupGetLoadedModulesList(
+PVOID NTAPI ntsupGetLoadedModulesList(
     _Out_opt_ PULONG ReturnLength
 )
 {
@@ -2250,7 +2250,7 @@ PVOID ntsupGetLoadedModulesList(
 * Returned buffer must be freed with ntsupHeapFree after usage.
 *
 */
-PVOID ntsupGetLoadedModulesList2(
+PVOID NTAPI ntsupGetLoadedModulesList2(
     _Out_opt_ PULONG ReturnLength
 )
 {
@@ -2271,7 +2271,7 @@ PVOID ntsupGetLoadedModulesList2(
 * Returned buffer must be freed with FreeMem function after usage.
 *
 */
-PVOID ntsupGetSystemInfoEx(
+PVOID NTAPI ntsupGetSystemInfoEx(
     _In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
     _Out_opt_ PULONG ReturnLength,
     _In_ PNTSUPMEMALLOC AllocMem,
@@ -2328,7 +2328,7 @@ PVOID ntsupGetSystemInfoEx(
 * Returned buffer must be freed with ntsupHeapFree after usage.
 *
 */
-PVOID ntsupGetSystemInfo(
+PVOID NTAPI ntsupGetSystemInfo(
     _In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
     _Out_opt_ PULONG ReturnLength
 )
@@ -2350,7 +2350,7 @@ PVOID ntsupGetSystemInfo(
 * Return FALSE on any error.
 *
 */
-BOOL ntsupResolveSymbolicLink(
+BOOL NTAPI ntsupResolveSymbolicLink(
     _In_opt_ HANDLE RootDirectoryHandle,
     _In_ PUNICODE_STRING LinkName,
     _Inout_ LPWSTR Buffer,
@@ -2410,7 +2410,7 @@ BOOL ntsupResolveSymbolicLink(
 * Lookups thread win32 start address.
 *
 */
-BOOL ntsupQueryThreadWin32StartAddress(
+BOOL NTAPI ntsupQueryThreadWin32StartAddress(
     _In_ HANDLE ThreadHandle,
     _Out_opt_ PULONG_PTR Win32StartAddress
 )
@@ -2441,7 +2441,7 @@ BOOL ntsupQueryThreadWin32StartAddress(
 *
 */
 _Success_(return)
-NTSTATUS ntsupOpenDirectoryEx(
+NTSTATUS NTAPI ntsupOpenDirectoryEx(
     _Out_ PHANDLE DirectoryHandle,
     _In_opt_ HANDLE RootDirectoryHandle,
     _In_ PUNICODE_STRING DirectoryName,
@@ -2472,7 +2472,7 @@ NTSTATUS ntsupOpenDirectoryEx(
 * Open directory handle with DIRECTORY_QUERY access, with root directory support.
 *
 */
-NTSTATUS ntsupOpenDirectory(
+NTSTATUS NTAPI ntsupOpenDirectory(
     _Out_ PHANDLE DirectoryHandle,
     _In_opt_ HANDLE RootDirectoryHandle,
     _In_ LPCWSTR DirectoryName,
@@ -2495,7 +2495,7 @@ NTSTATUS ntsupOpenDirectory(
 * If nothing found return FALSE.
 *
 */
-BOOL ntsupQueryProcessName(
+BOOL NTAPI ntsupQueryProcessName(
     _In_ ULONG_PTR dwProcessId,
     _In_ PVOID ProcessList,
     _Inout_ LPWSTR Buffer,
@@ -2545,7 +2545,7 @@ BOOL ntsupQueryProcessName(
 * If nothing found return FALSE.
 *
 */
-BOOL ntsupQueryProcessEntryById(
+BOOL NTAPI ntsupQueryProcessEntryById(
     _In_ HANDLE UniqueProcessId,
     _In_ PVOID ProcessList,
     _Out_ PSYSTEM_PROCESS_INFORMATION * Entry
@@ -2590,7 +2590,7 @@ BOOL ntsupQueryProcessEntryById(
 * Use FreeMem to release allocated buffer.
 *
 */
-NTSTATUS ntsupQueryProcessImageFileNameByProcessId(
+NTSTATUS NTAPI ntsupQueryProcessImageFileNameByProcessId(
     _In_ HANDLE UniqueProcessId,
     _Out_ PUNICODE_STRING ProcessImageFileName,
     _In_ PNTSUPMEMALLOC AllocMem,
@@ -2638,7 +2638,7 @@ NTSTATUS ntsupQueryProcessImageFileNameByProcessId(
 * Use FreeMem to release allocated buffer.
 *
 */
-NTSTATUS ntsupQuerySystemObjectInformationVariableSize(
+NTSTATUS NTAPI ntsupQuerySystemObjectInformationVariableSize(
     _In_ PFN_NTQUERYROUTINE QueryRoutine,
     _In_opt_ HANDLE ObjectHandle,
     _In_ DWORD InformationClass,
@@ -2653,7 +2653,7 @@ NTSTATUS ntsupQuerySystemObjectInformationVariableSize(
     ULONG returnLengthLocal = 0;
 
     *Buffer = NULL;
-    if (ReturnLength) *ReturnLength = 0;
+    if (ReturnLength)*ReturnLength = 0;
 
     ntStatus = QueryRoutine(ObjectHandle,
         InformationClass,
@@ -2686,7 +2686,7 @@ NTSTATUS ntsupQuerySystemObjectInformationVariableSize(
 
     if (NT_SUCCESS(ntStatus)) {
         *Buffer = queryBuffer;
-        if (ReturnLength) *ReturnLength = returnLengthLocal;
+        if (ReturnLength)*ReturnLength = returnLengthLocal;
     }
     else {
         FreeMem(queryBuffer);
@@ -2705,11 +2705,11 @@ NTSTATUS ntsupQuerySystemObjectInformationVariableSize(
 * Use FreeMem to release allocated buffer.
 *
 */
-NTSTATUS ntsupQuerySystemObjectInformationVariableSizeEx(
+NTSTATUS NTAPI ntsupQuerySystemObjectInformationVariableSizeEx(
     _In_ PFN_NTQUERYROUTINE QueryRoutine,
     _In_opt_ HANDLE ObjectHandle,
     _In_ DWORD InformationClass,
-    _Out_ PVOID* Buffer,
+    _Out_ PVOID * Buffer,
     _Out_opt_ PULONG ReturnLength,
     _In_ ULONG InitialBufferSize,
     _In_ PNTSUPMEMALLOC AllocMem,
@@ -2790,7 +2790,7 @@ NTSTATUS ntsupQuerySystemObjectInformationVariableSizeEx(
 * Query VSM protection information.
 *
 */
-BOOLEAN ntsupQueryVsmProtectionInformation(
+BOOLEAN NTAPI ntsupQueryVsmProtectionInformation(
     _Out_ PBOOLEAN pbDmaProtectionsAvailable,
     _Out_ PBOOLEAN pbDmaProtectionsInUse,
     _Out_ PBOOLEAN pbHardwareMbecAvailable,
@@ -2801,10 +2801,10 @@ BOOLEAN ntsupQueryVsmProtectionInformation(
     ULONG returnLength;
     SYSTEM_VSM_PROTECTION_INFORMATION svpi;
 
-    if (pbDmaProtectionsAvailable) *pbDmaProtectionsAvailable = FALSE;
-    if (pbDmaProtectionsInUse) *pbDmaProtectionsInUse = FALSE;
-    if (pbHardwareMbecAvailable) *pbHardwareMbecAvailable = FALSE;
-    if (pbApicVirtualizationAvailable) *pbApicVirtualizationAvailable = FALSE;
+    if (pbDmaProtectionsAvailable)*pbDmaProtectionsAvailable = FALSE;
+    if (pbDmaProtectionsInUse)*pbDmaProtectionsInUse = FALSE;
+    if (pbHardwareMbecAvailable)*pbHardwareMbecAvailable = FALSE;
+    if (pbApicVirtualizationAvailable)*pbApicVirtualizationAvailable = FALSE;
 
     RtlSecureZeroMemory(&svpi, sizeof(SYSTEM_VSM_PROTECTION_INFORMATION));
 
@@ -2815,10 +2815,10 @@ BOOLEAN ntsupQueryVsmProtectionInformation(
         &returnLength);
 
     if (NT_SUCCESS(ntStatus)) {
-        if (pbDmaProtectionsAvailable) *pbDmaProtectionsAvailable = svpi.DmaProtectionsAvailable;
-        if (pbDmaProtectionsInUse) *pbDmaProtectionsInUse = svpi.DmaProtectionsInUse;
-        if (pbHardwareMbecAvailable) *pbHardwareMbecAvailable = svpi.HardwareMbecAvailable;
-        if (pbApicVirtualizationAvailable) *pbApicVirtualizationAvailable = svpi.ApicVirtualizationAvailable;
+        if (pbDmaProtectionsAvailable)*pbDmaProtectionsAvailable = svpi.DmaProtectionsAvailable;
+        if (pbDmaProtectionsInUse)*pbDmaProtectionsInUse = svpi.DmaProtectionsInUse;
+        if (pbHardwareMbecAvailable)*pbHardwareMbecAvailable = svpi.HardwareMbecAvailable;
+        if (pbApicVirtualizationAvailable)*pbApicVirtualizationAvailable = svpi.ApicVirtualizationAvailable;
         return TRUE;
     }
     else {
@@ -2836,7 +2836,7 @@ BOOLEAN ntsupQueryVsmProtectionInformation(
 * Query VBS/HVCI state.
 *
 */
-BOOLEAN ntsupQueryVBSState(
+BOOLEAN NTAPI ntsupQueryVBSState(
     _Out_ PBOOLEAN pbVBSRunning,
     _Out_ PBOOLEAN pbHVCIEnabled,
     _Out_ PBOOLEAN pbHVCIStrictMode
@@ -2904,9 +2904,9 @@ BOOLEAN ntsupQueryVBSState(
     // Prefer the isolated user mode information for HVCI state.
     // It reflects the actual VBS-backed HVCI status.
     //
-    if (pbHVCIEnabled) *pbHVCIEnabled = iumi.HvciEnabled;
+    if (pbHVCIEnabled)*pbHVCIEnabled = iumi.HvciEnabled;
 
-    if (pbHVCIStrictMode) *pbHVCIStrictMode = iumi.HvciStrictMode;
+    if (pbHVCIStrictMode)*pbHVCIStrictMode = iumi.HvciStrictMode;
 
     return TRUE;
 }
@@ -2920,10 +2920,10 @@ BOOLEAN ntsupQueryVBSState(
 *
 * If ImageSize is non-zero, the image is range-checked by
 * RtlImageNtHeaderEx. Otherwise, range checking is disabled.
-* 
+*
 */
-PVOID ntsupLookupImageSectionByNameEx(
-    _In_ CHAR* SectionName,
+PVOID NTAPI ntsupLookupImageSectionByNameEx(
+    _In_ CHAR * SectionName,
     _In_ ULONG SectionNameLength,
     _In_ PVOID DllBase,
     _In_ SIZE_T ImageSize,
@@ -3014,8 +3014,8 @@ PVOID ntsupLookupImageSectionByNameEx(
 * Lookup PE image section by name.
 *
 */
-PVOID ntsupLookupImageSectionByName(
-    _In_ CHAR* SectionName,
+PVOID NTAPI ntsupLookupImageSectionByName(
+    _In_ CHAR * SectionName,
     _In_ ULONG SectionNameLength,
     _In_ PVOID DllBase,
     _Out_ PULONG SectionSize
@@ -3037,7 +3037,7 @@ PVOID ntsupLookupImageSectionByName(
 * Lookup pattern in buffer.
 *
 */
-PVOID ntsupFindPattern(
+PVOID NTAPI ntsupFindPattern(
     _In_ CONST PBYTE Buffer,
     _In_ SIZE_T BufferSize,
     _In_ CONST PBYTE Pattern,
@@ -3080,7 +3080,7 @@ PVOID ntsupFindPattern(
 * Lookup pattern in buffer with specified mask.
 *
 */
-DWORD ntsupFindPatternEx(
+DWORD NTAPI ntsupFindPatternEx(
     _In_ PATTERN_SEARCH_PARAMS * SearchParams
 )
 {
@@ -3151,7 +3151,7 @@ DWORD ntsupFindPatternEx(
 * NtOpenProcess wrapper.
 *
 */
-NTSTATUS ntsupOpenProcess(
+NTSTATUS NTAPI ntsupOpenProcess(
     _In_ HANDLE UniqueProcessId,
     _In_ ACCESS_MASK DesiredAccess,
     _Out_ PHANDLE ProcessHandle
@@ -3176,22 +3176,23 @@ NTSTATUS ntsupOpenProcess(
 }
 
 /*
-* ntsupOpenThread
+* ntsupOpenThreadEx
 *
 * Purpose:
 *
 * NtOpenThread wrapper.
 *
 */
-NTSTATUS ntsupOpenThread(
+NTSTATUS NTAPI ntsupOpenThreadEx(
     _In_ PCLIENT_ID ClientId,
     _In_ ACCESS_MASK DesiredAccess,
+    _In_ ULONG ObjectAttributes,
     _Out_ PHANDLE ThreadHandle
 )
 {
     NTSTATUS ntStatus;
     HANDLE threadHandle = NULL;
-    OBJECT_ATTRIBUTES objectAttributes = RTL_INIT_OBJECT_ATTRIBUTES((PUNICODE_STRING)NULL, 0);
+    OBJECT_ATTRIBUTES objectAttributes = RTL_INIT_OBJECT_ATTRIBUTES((PUNICODE_STRING)NULL, ObjectAttributes);
 
     ntStatus = NtOpenThread(
         &threadHandle,
@@ -3205,6 +3206,26 @@ NTSTATUS ntsupOpenThread(
 }
 
 /*
+* ntsupOpenThread
+*
+* Purpose:
+*
+* NtOpenThread wrapper.
+*
+*/
+NTSTATUS NTAPI ntsupOpenThread(
+    _In_ PCLIENT_ID ClientId,
+    _In_ ACCESS_MASK DesiredAccess,
+    _Out_ PHANDLE ThreadHandle
+)
+{
+    return ntsupOpenThreadEx(ClientId,
+        DesiredAccess,
+        0,
+        ThreadHandle);
+}
+
+/*
 * ntsupCICustomKernelSignersAllowed
 *
 * Purpose:
@@ -3212,7 +3233,7 @@ NTSTATUS ntsupOpenThread(
 * Return license state if present (EnterpriseG).
 *
 */
-NTSTATUS ntsupCICustomKernelSignersAllowed(
+NTSTATUS NTAPI ntsupCICustomKernelSignersAllowed(
     _Out_ PBOOLEAN bAllowed)
 {
     NTSTATUS ntStatus;
@@ -3242,7 +3263,7 @@ NTSTATUS ntsupCICustomKernelSignersAllowed(
 * Tests if the given token has the given privilege enabled/enabled by default.
 *
 */
-NTSTATUS ntsupPrivilegeEnabled(
+NTSTATUS NTAPI ntsupPrivilegeEnabled(
     _In_ HANDLE ClientToken,
     _In_ ULONG Privilege,
     _Out_ LPBOOL pfResult
@@ -3273,7 +3294,7 @@ NTSTATUS ntsupPrivilegeEnabled(
 * Set environment variable.
 *
 */
-BOOLEAN ntsupSetEnvironmentVariable(
+BOOLEAN NTAPI ntsupSetEnvironmentVariable(
     _In_ LPCWSTR Name,
     _In_opt_ LPCWSTR Value
 )
@@ -3319,7 +3340,7 @@ BOOLEAN ntsupSetEnvironmentVariable(
 * Return offset to the given environment variable.
 *
 */
-LPWSTR ntsupQueryEnvironmentVariableOffset(
+LPWSTR NTAPI ntsupQueryEnvironmentVariableOffset(
     _In_ PUNICODE_STRING Value
 )
 {
@@ -3355,7 +3376,7 @@ LPWSTR ntsupQueryEnvironmentVariableOffset(
 * Reimplemented ExpandEnvironmentStrings.
 *
 */
-DWORD ntsupExpandEnvironmentStrings(
+DWORD NTAPI ntsupExpandEnvironmentStrings(
     _In_ LPCWSTR lpSrc,
     _Out_writes_to_opt_(nSize, return) LPWSTR lpDst,
     _In_ DWORD nSize
@@ -3397,7 +3418,7 @@ DWORD ntsupExpandEnvironmentStrings(
 * Function return operation status code.
 *
 */
-NTSTATUS ntsupIsUserHasInteractiveSid(
+NTSTATUS NTAPI ntsupIsUserHasInteractiveSid(
     _In_ HANDLE hToken,
     _Out_ PBOOL pbInteractiveSid)
 {
@@ -3487,7 +3508,7 @@ NTSTATUS ntsupIsUserHasInteractiveSid(
 * Function return operation status code.
 *
 */
-NTSTATUS ntsupIsLocalSystem(
+NTSTATUS NTAPI ntsupIsLocalSystem(
     _Out_ PBOOL pbResult)
 {
     BOOL                            bResult = FALSE;
@@ -3574,7 +3595,7 @@ NTSTATUS ntsupIsLocalSystem(
 * Returns process elevation type.
 *
 */
-BOOL ntsupGetProcessElevationType(
+BOOL NTAPI ntsupGetProcessElevationType(
     _In_opt_ HANDLE ProcessHandle,
     _Out_ TOKEN_ELEVATION_TYPE * lpType
 )
@@ -3615,7 +3636,7 @@ BOOL ntsupGetProcessElevationType(
 * Returns process elevation state.
 *
 */
-NTSTATUS ntsupIsProcessElevated(
+NTSTATUS NTAPI ntsupIsProcessElevated(
     _In_ ULONG ProcessId,
     _Out_ PBOOL Elevated)
 {
@@ -3624,7 +3645,7 @@ NTSTATUS ntsupIsProcessElevated(
     HANDLE processHandle = NULL, tokenHandle = NULL;
     TOKEN_ELEVATION tokenInfo;
 
-    if (Elevated) *Elevated = FALSE;
+    if (Elevated)*Elevated = FALSE;
 
     ntStatus = ntsupOpenProcess(
         UlongToHandle(ProcessId),
@@ -3667,7 +3688,7 @@ NTSTATUS ntsupIsProcessElevated(
 * Flush file cache and memory standby list.
 *
 */
-VOID ntsupPurgeSystemCache(
+VOID NTAPI ntsupPurgeSystemCache(
     VOID
 )
 {
@@ -3771,7 +3792,7 @@ VOID ntsupPurgeSystemCache(
 * Return system root directory silo session aware.
 *
 */
-PWSTR ntsupGetSystemRoot(
+PWSTR NTAPI ntsupGetSystemRoot(
     VOID
 )
 {
@@ -3791,7 +3812,7 @@ PWSTR ntsupGetSystemRoot(
 * Reference process debug object.
 *
 */
-NTSTATUS ntsupGetProcessDebugObject(
+NTSTATUS NTAPI ntsupGetProcessDebugObject(
     _In_ HANDLE ProcessHandle,
     _Out_ PHANDLE DebugObjectHandle
 )
@@ -3812,7 +3833,7 @@ NTSTATUS ntsupGetProcessDebugObject(
 * Load resource by given id (win32 FindResource, SizeofResource, LockResource).
 *
 */
-PBYTE ntsupQueryResourceData(
+PBYTE NTAPI ntsupQueryResourceData(
     _In_ ULONG_PTR ResourceId,
     _In_ PVOID DllHandle,
     _In_ PULONG DataSize
@@ -3855,7 +3876,7 @@ PBYTE ntsupQueryResourceData(
 * Enable/Disable Wow64 redirection.
 *
 */
-NTSTATUS ntsupEnableWow64Redirection(
+NTSTATUS NTAPI ntsupEnableWow64Redirection(
     _In_ BOOLEAN bEnable
 )
 {
@@ -3994,7 +4015,7 @@ NTSTATUS NTAPI ntsupEnumSystemObjects(
 * Return TRUE if the given object exists, FALSE otherwise.
 *
 */
-BOOLEAN ntsupIsObjectExists(
+BOOLEAN NTAPI ntsupIsObjectExists(
     _In_ LPCWSTR RootDirectory,
     _In_ LPCWSTR ObjectName
 )
@@ -4015,7 +4036,7 @@ BOOLEAN ntsupIsObjectExists(
 * Tests if the current user is admin with full access token.
 *
 */
-BOOLEAN ntsupUserIsFullAdmin(
+BOOLEAN NTAPI ntsupUserIsFullAdmin(
     VOID
 )
 {
@@ -4085,7 +4106,7 @@ BOOLEAN ntsupUserIsFullAdmin(
 * Allocated memory must be freed by called with supHeapFree.
 *
 */
-NTSTATUS ntsupDuplicateUnicodeString(
+NTSTATUS NTAPI ntsupDuplicateUnicodeString(
     _In_ PCUNICODE_STRING SourceString,
     _Out_ PUNICODE_STRING DestinationString
 )
@@ -4144,7 +4165,7 @@ NTSTATUS ntsupDuplicateUnicodeString(
 * Allocated memory must be freed by called with supHeapFree.
 *
 */
-NTSTATUS ntsupDuplicateAnsiString(
+NTSTATUS NTAPI ntsupDuplicateAnsiString(
     _In_ PCANSI_STRING SourceString,
     _Out_ PANSI_STRING DestinationString
 )
@@ -4203,7 +4224,7 @@ NTSTATUS ntsupDuplicateAnsiString(
 * Allocated string must be freed by caller with RtlFreeUnicodeString.
 *
 */
-NTSTATUS ntsupQueryProcessCommandLine(
+NTSTATUS NTAPI ntsupQueryProcessCommandLine(
     _In_ HANDLE ProcessHandle,
     _Out_ PUNICODE_STRING CommandLine,
     _In_ PNTSUPMEMALLOC AllocMem,
@@ -4276,7 +4297,7 @@ NTSTATUS ntsupQueryProcessCommandLine(
 * executable section.
 *
 */
-NTSTATUS ntsupHashImageSections(
+NTSTATUS NTAPI ntsupHashImageSections(
     _In_ PVOID ImageBase,
     _In_ SIZE_T ImageSize,          // Size of image mapping
     _Out_writes_bytes_(HashBufferSize) PBYTE HashBuffer,
@@ -4436,6 +4457,55 @@ NTSTATUS ntsupHashImageSections(
         return STATUS_NOT_FOUND;
 
     return STATUS_SUCCESS;
+}
+
+/*
+* ntsupQueryProcessDebugInformation
+*
+* Purpose:
+*
+* Allocate process debug information buffer.
+*
+*/
+PRTL_DEBUG_INFORMATION NTAPI ntsupQueryProcessDebugInformation(
+    _In_ HANDLE ProcessId,
+    _In_ ULONG Flags
+)
+{
+    PRTL_DEBUG_INFORMATION debugBuffer;
+    NTSTATUS ntStatus;
+
+    debugBuffer = RtlCreateQueryDebugBuffer(0, FALSE);
+    if (debugBuffer == NULL)
+        return NULL;
+
+    ntStatus = RtlQueryProcessDebugInformation(
+        ProcessId,
+        Flags,
+        debugBuffer);
+
+    if (!NT_SUCCESS(ntStatus)) {
+        RtlDestroyQueryDebugBuffer(debugBuffer);
+        return NULL;
+    }
+
+    return debugBuffer;
+}
+
+/*
+* ntsupFreeProcessDebugInformation
+*
+* Purpose:
+*
+* Free process debug information buffer.
+*
+*/
+VOID NTAPI ntsupFreeProcessDebugInformation(
+    _In_opt_ PRTL_DEBUG_INFORMATION DebugInformation
+)
+{
+    if (DebugInformation != NULL)
+        RtlDestroyQueryDebugBuffer(DebugInformation);
 }
 
 #pragma warning(pop)
