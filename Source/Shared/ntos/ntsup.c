@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTSUP.C
 *
-*  VERSION:     2.33
+*  VERSION:     2.34
 *
-*  DATE:        12 Aug 2026
+*  DATE:        18 Aug 2026
 *
 *  Native API support functions.
 *
@@ -842,6 +842,150 @@ LPCWSTR ntsupStrStrIW(
 
             c1 = ntsupLowerCharW(*tmpString);
             c2 = ntsupLowerCharW(*tmpSubString);
+
+            tmpString++;
+            tmpSubString++;
+
+        } while ((c1 == c2) && (c2 != 0));
+
+
+        if (c2 == 0)
+            return String;
+
+        String++;
+    }
+
+    return NULL;
+}
+
+/*
+* ntsupStrStrA
+*
+* Purpose:
+*
+* Case sensitive string search.
+*
+*/
+LPCSTR ntsupStrStrA(
+    _In_ LPCSTR String,
+    _In_ LPCSTR SubString
+)
+{
+    CHAR c0, c1, c2;
+    LPCSTR tmpString;
+    LPCSTR tmpSubString;
+
+    if (String == SubString)
+        return String;
+
+    if (String == NULL)
+        return NULL;
+
+    if (SubString == NULL)
+        return NULL;
+
+    //
+    // Empty substring matches at beginning.
+    //
+    if (*SubString == 0)
+        return String;
+
+    c0 = *SubString;
+
+    while (c0 != 0) {
+
+        while (*String != 0) {
+
+            c2 = *String;
+
+            if (c2 == c0)
+                break;
+
+            String++;
+        }
+
+        if (*String == 0)
+            return NULL;
+
+        tmpString = String;
+        tmpSubString = SubString;
+
+        do {
+
+            c1 = *tmpString;
+            c2 = *tmpSubString;
+
+            tmpString++;
+            tmpSubString++;
+
+        } while ((c1 == c2) && (c2 != 0));
+
+
+        if (c2 == 0)
+            return String;
+
+        String++;
+    }
+
+    return NULL;
+}
+
+/*
+* ntsupStrStrW
+*
+* Purpose:
+*
+* Case sensitive string search.
+*
+*/
+LPCWSTR ntsupStrStrW(
+    _In_ LPCWSTR String,
+    _In_ LPCWSTR SubString
+)
+{
+    WCHAR c0, c1, c2;
+    LPCWSTR tmpString;
+    LPCWSTR tmpSubString;
+
+    if (String == SubString)
+        return String;
+
+    if (String == NULL)
+        return NULL;
+
+    if (SubString == NULL)
+        return NULL;
+
+    //
+    // Empty substring matches at beginning.
+    //
+    if (*SubString == 0)
+        return String;
+
+    c0 = *SubString;
+
+    while (c0 != 0) {
+
+        while (*String != 0) {
+
+            c2 = *String;
+
+            if (c2 == c0)
+                break;
+
+            String++;
+        }
+
+        if (*String == 0)
+            return NULL;
+
+        tmpString = String;
+        tmpSubString = SubString;
+
+        do {
+
+            c1 = *tmpString;
+            c2 = *tmpSubString;
 
             tmpString++;
             tmpSubString++;

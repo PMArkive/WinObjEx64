@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTSUP.H
 *
-*  VERSION:     2.33
+*  VERSION:     2.34
 *
-*  DATE:        12 Aug 2026
+*  DATE:        18 Aug 2026
 *
 *  Common header file for the NT API support functions and definitions.
 *
@@ -237,6 +237,13 @@ extern "C" {
         _In_ LPCWSTR String,
         _In_ LPCWSTR SubString);
 
+    LPCSTR ntsupStrStrA(
+        _In_ LPCSTR String,
+        _In_ LPCSTR SubString);
+    LPCWSTR ntsupStrStrW(
+        _In_ LPCWSTR String,
+        _In_ LPCWSTR SubString);
+
     LPSTR ntsupStrCatA(
         _Inout_ LPSTR Destination,
         _In_ LPCSTR Source);
@@ -284,11 +291,13 @@ extern "C" {
 #define ntsupStrNCopy ntsupStrNCopyW
 #define ntsupStrNCmp ntsupStrNCmpW
 #define ntsupStrStrI ntsupStrStrIW
+#define ntsupStrStr ntsupStrStrW
 #define ntsupStrCat ntsupStrCatW
 #define ntsupStrCatEx ntsupStrCatExW
 #define ntsupStrToUInt64 ntsupStrToUInt64W
 #define ntsupUInt64ToStr ntsupUInt64ToStrW
 #define ntsupHexToUInt64 ntsupHexToUInt64W
+#define ntsupIsDigit ntsupIsDigitW
 #else
 #define ntsupLowerChar ntsupLowerCharA
 #define ntsupStrChr ntsupStrChrA
@@ -299,11 +308,13 @@ extern "C" {
 #define ntsupStrNCopy ntsupStrNCopyA
 #define ntsupStrNCmp ntsupStrNCmpA
 #define ntsupStrStrI ntsupStrStrIA
+#define ntsupStrStr ntsupStrStrA
 #define ntsupStrCat ntsupStrCatA
 #define ntsupStrCatEx ntsupStrCatExA
 #define ntsupStrToUInt64 ntsupStrToUInt64A
 #define ntsupUInt64ToStr ntsupUInt64ToStrA
 #define ntsupHexToUInt64 ntsupHexToUInt64A
+#define ntsupIsDigit ntsupIsDigitA
 #endif
 
     //
