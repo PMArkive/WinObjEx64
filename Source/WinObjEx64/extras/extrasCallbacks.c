@@ -4,9 +4,9 @@
 *
 *  TITLE:       EXTRASCALLBACKS.C
 *
-*  VERSION:     2.11
+*  VERSION:     2.12
 *
-*  DATE:        11 Jul 2026
+*  DATE:        26 Jul 2026
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -1067,10 +1067,11 @@ OBEX_FINDCALLBACK_ROUTINE(FindCiCallbacks)
                 //
                 // Locate PAGE image section as required variable is always in PAGE.
                 //
-                SectionBase = supLookupImageSectionByName(
+                SectionBase = supLookupImageSectionByNameEx(
                     PAGE_SECTION,
                     PAGE_SECTION_LENGTH,
                     g_kdctx.NtOsImageMap,
+                    g_kdctx.NtOsImageSize,
                     &SectionSize);
 
                 if ((SectionBase == 0) || (SectionSize == 0))
@@ -3222,10 +3223,11 @@ OBEX_FINDCALLBACK_ROUTINE(FindEmpCallbackListHead)
         //
         // Locate PAGE image section as required variable is always in PAGE.
         //
-        SectionBase = supLookupImageSectionByName(
+        SectionBase = supLookupImageSectionByNameEx(
             PAGE_SECTION,
             PAGE_SECTION_LENGTH,
             g_kdctx.NtOsImageMap,
+            g_kdctx.NtOsImageSize,
             &SectionSize);
 
         if ((SectionBase == 0) || (SectionSize == 0))

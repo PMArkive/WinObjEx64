@@ -4,9 +4,9 @@
 *
 *  TITLE:       KLDBG.C, based on KDSubmarine by Evilcry
 *
-*  VERSION:     2.10
+*  VERSION:     2.12
 *
-*  DATE:        27 Feb 2026
+*  DATE:        25 Jul 2026
 *
 *  MINIMUM SUPPORTED OS WINDOWS 7
 *
@@ -1295,7 +1295,8 @@ PVOID ObFindPrivateNamespaceLookupTable2(
 
     ESERVERSILO_GLOBALS PspHostSiloGlobals;
 
-    HMODULE hNtOs = (HMODULE)Context->NtOsImageMap;
+    HMODULE hLoadedNtOs = (HMODULE)Context->NtOsImageMap;
+    ULONG hLoadedNtOsSize = Context->NtOsImageSize;
 
     do {
 
@@ -1319,9 +1320,10 @@ PVOID ObFindPrivateNamespaceLookupTable2(
             //
             // Locate .text image section.
             //
-            SectionBase = supLookupImageSectionByName(TEXT_SECTION,
+            SectionBase = supLookupImageSectionByNameEx(TEXT_SECTION,
                 TEXT_SECTION_LENGTH,
-                (PVOID)hNtOs,
+                (PVOID)hLoadedNtOs,
+                hLoadedNtOsSize,
                 &SectionSize);
 
             if (SectionBase == NULL || SectionSize == 0)
@@ -1333,7 +1335,7 @@ PVOID ObFindPrivateNamespaceLookupTable2(
             //
             if (g_NtBuildNumber >= NT_WIN10_REDSTONE4) {
 
-                ptrCode = (PBYTE)GetProcAddress(hNtOs, "PsGetServerSiloServiceSessionId");
+                ptrCode = (PBYTE)GetProcAddress(hLoadedNtOs, "PsGetServerSiloServiceSessionId");
 
             }
             else {
@@ -1369,7 +1371,7 @@ PVOID ObFindPrivateNamespaceLookupTable2(
             // Find address to PspHostSiloGlobals in code.
             //
             varAddress = ObFindAddress((ULONG_PTR)Context->NtOsBase,
-                (ULONG_PTR)hNtOs,
+                (ULONG_PTR)hLoadedNtOs,
                 IL_PspHostSiloGlobals,
                 ptrCode,
                 DA_ScanBytesPNSVariant1,
@@ -1427,7 +1429,8 @@ PVOID ObFindPrivateNamespaceLookupTable(
     PVOID      SectionBase;
     ULONG      SectionSize = 0;
 
-    HMODULE hNtOs = (HMODULE)Context->NtOsImageMap;
+    HMODULE hLoadedNtOs = (HMODULE)Context->NtOsImageMap;
+    ULONG hLoadedNtOsSize = Context->NtOsImageSize;
 
     if (g_NtBuildNumber > NT_WIN10_THRESHOLD2)
         return ObFindPrivateNamespaceLookupTable2(Context);
@@ -1437,9 +1440,10 @@ PVOID ObFindPrivateNamespaceLookupTable(
         //
         // Locate PAGE image section.
         //
-        SectionBase = supLookupImageSectionByName(PAGE_SECTION,
+        SectionBase = supLookupImageSectionByNameEx(PAGE_SECTION,
             PAGE_SECTION_LENGTH,
-            (PVOID)hNtOs,
+            (PVOID)hLoadedNtOs,
+            hLoadedNtOsSize,
             &SectionSize);
 
         if ((SectionBase == 0) || (SectionSize == 0))
@@ -1467,7 +1471,7 @@ PVOID ObFindPrivateNamespaceLookupTable(
             break;
 
         Address = ObFindAddress((ULONG_PTR)Context->NtOsBase,
-            (ULONG_PTR)hNtOs,
+            (ULONG_PTR)hLoadedNtOs,
             IL_PspHostSiloGlobals,
             ptrCode,
             DA_ScanBytesPNSVariant2,
@@ -1521,6 +1525,7 @@ PVOID ObGetCallbackBlockRoutine(
 */
 BOOL kdpFindKiServiceTableByPattern(
     _In_ ULONG_PTR MappedImageBase,
+    _In_ ULONG MappedImageSize,
     _In_ ULONG_PTR KernelImageBase,
     _Out_ ULONG_PTR * Address
 )
@@ -1534,9 +1539,10 @@ BOOL kdpFindKiServiceTableByPattern(
     //
     // Locate .text image section.
     //
-    sectionBase = (ULONG_PTR)supLookupImageSectionByName(TEXT_SECTION,
+    sectionBase = (ULONG_PTR)supLookupImageSectionByNameEx(TEXT_SECTION,
         TEXT_SECTION_LENGTH,
         (PVOID)MappedImageBase,
+        MappedImageSize,
         &sectionSize);
 
     if (sectionBase == 0)
@@ -1589,6 +1595,7 @@ BOOL kdpFindKiServiceTableByPattern(
 */
 BOOL kdFindKiServiceTable(
     _In_ ULONG_PTR MappedImageBase,
+    _In_ ULONG MappedImageSize,
     _In_ ULONG_PTR KernelImageBase,
     _Inout_ KSERVICE_TABLE_DESCRIPTOR * ServiceTable
 )
@@ -1622,7 +1629,9 @@ BOOL kdFindKiServiceTable(
         //
         if (varAddress == 0) {
 
-            if (!kdpFindKiServiceTableByPattern(MappedImageBase,
+            if (!kdpFindKiServiceTableByPattern(
+                MappedImageBase,
+                MappedImageSize,
                 KernelImageBase,
                 &varAddress))
             {
@@ -2945,6 +2954,7 @@ BOOL kdLoadNtKernelImage(
 {
     PUCHAR pModuleName;
     PRTL_PROCESS_MODULES pModulesList = NULL;
+    PLDR_DATA_TABLE_ENTRY pModuleEntry = NULL;
 
     WCHAR szFileName[(4 + MAX_PATH) * 2];
 
@@ -2976,16 +2986,16 @@ BOOL kdLoadNtKernelImage(
             DONT_RESOLVE_DLL_REFERENCES);
 
         if (Context->NtOsImageMap) {
-
-            supLoadSymbolsForNtImage(
-                (PSYMCONTEXT)g_kdctx.NtOsSymContext,
-                szFileName,
-                Context->NtOsImageMap,
-                0,
-                NULL);
-
+            if (NT_SUCCESS(LdrFindEntryForAddress(Context->NtOsImageMap, &pModuleEntry))) {
+                Context->NtOsImageSize = pModuleEntry->SizeOfImage;
+                supLoadSymbolsForNtImage(
+                    (PSYMCONTEXT)g_kdctx.NtOsSymContext,
+                    szFileName,
+                    Context->NtOsImageMap,
+                    0,
+                    NULL);
+            }
         }
-
     }
 
     return (Context->NtOsImageMap != NULL);
@@ -3086,14 +3096,14 @@ BOOLEAN kdpQueryMmUnloadedDrivers(
     _In_ PKLDBGCONTEXT Context
 )
 {
-    HMODULE   hNtOs;
+    HMODULE   hLoadedNtOs;
     ULONG_PTR NtOsBase, lookupAddress = 0;
 
     PBYTE     ptrCode, sigPattern;
     PVOID     SectionBase;
     ULONG     SectionSize = 0;
 
-    ULONG     sigSize;
+    ULONG     sigSize, hLoadedNtOsSize;
 
     ULONG     Index = 0, instLength = 0, tempOffset;
     LONG      relativeValue = 0;
@@ -3105,7 +3115,8 @@ BOOLEAN kdpQueryMmUnloadedDrivers(
         return TRUE;
 
     NtOsBase = (ULONG_PTR)g_kdctx.NtOsBase;
-    hNtOs = (HMODULE)g_kdctx.NtOsImageMap;
+    hLoadedNtOs = (HMODULE)g_kdctx.NtOsImageMap;
+    hLoadedNtOsSize = g_kdctx.NtOsImageSize;
 
     do {
 
@@ -3129,9 +3140,10 @@ BOOLEAN kdpQueryMmUnloadedDrivers(
             //
             // Locate PAGE image section.
             //
-            SectionBase = supLookupImageSectionByName(PAGE_SECTION,
+            SectionBase = supLookupImageSectionByNameEx(PAGE_SECTION,
                 PAGE_SECTION_LENGTH,
-                (PVOID)hNtOs,
+                (PVOID)hLoadedNtOs,
+                hLoadedNtOsSize,
                 &SectionSize);
 
             if ((SectionBase == 0) || (SectionSize == 0))

@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.C
 *
-*  VERSION:     2.11
+*  VERSION:     2.12
 *
-*  DATE:        11 Jul 2026
+*  DATE:        28 Jul 2026
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -1128,37 +1128,17 @@ PVOID supGetTokenInfo(
 )
 {
     PVOID Buffer = NULL;
-    ULONG returnLength = 0;
 
-    if (ReturnLength)
-        *ReturnLength = 0;
-
-    NtQueryInformationToken(TokenHandle,
+    if (NT_SUCCESS(supQueryTokenInformation(
+        TokenHandle,
         TokenInformationClass,
-        NULL,
-        0,
-        &returnLength);
-
-    Buffer = supHeapAlloc((SIZE_T)returnLength);
-    if (Buffer) {
-
-        if (NT_SUCCESS(NtQueryInformationToken(TokenHandle,
-            TokenInformationClass,
-            Buffer,
-            returnLength,
-            &returnLength)))
-        {
-            if (ReturnLength)
-                *ReturnLength = returnLength;
-            return Buffer;
-        }
-        else {
-            supHeapFree(Buffer);
-            return NULL;
-        }
+        &Buffer,
+        ReturnLength)))
+    {
+        return Buffer;
     }
 
-    return Buffer;
+    return NULL;
 }
 
 /*
@@ -1224,24 +1204,6 @@ PVOID supGetSystemInfo(
 }
 
 /*
-* supxFreeObjectTypes
-*
-* Purpose:
-*
-* Free object types memory callback.
-*
-*/
-BOOL CALLBACK supxFreeObjectTypes(
-    _In_opt_ PVOID Context
-)
-{
-    if (Context)
-        supHeapFree(Context);
-
-    return TRUE;
-}
-
-/*
 * supGetObjectTypesInfo
 *
 * Purpose:
@@ -1255,37 +1217,15 @@ PVOID supGetObjectTypesInfo(
     VOID
 )
 {
-    PVOID       buffer = NULL;
-    ULONG       bufferSize = 1024 * 16;
-    NTSTATUS    ntStatus;
-    ULONG       returnedLength = 0;
+    PVOID buffer = NULL;
+    ULONG returnedLength = 0;
 
-    buffer = supHeapAlloc((SIZE_T)bufferSize);
-    if (buffer == NULL)
-        return NULL;
-
-    while ((ntStatus = NtQueryObject(
-        NULL,
-        ObjectTypesInformation,
-        buffer,
-        bufferSize,
-        &returnedLength)) == STATUS_INFO_LENGTH_MISMATCH)
+    if (NT_SUCCESS(supQueryObjectTypesInformation(&buffer,
+        &returnedLength,
+        1024 * 16)))
     {
-        supHeapFree(buffer);
-        bufferSize *= 2;
-
-        if (bufferSize > (16 * 1024 * 1024))
-            return NULL;
-
-        buffer = supHeapAlloc((SIZE_T)bufferSize);
-    }
-
-    if (NT_SUCCESS(ntStatus)) {
         return buffer;
     }
-
-    if (buffer)
-        supHeapFree(buffer);
 
     return NULL;
 }
@@ -9880,6 +9820,228 @@ VOID supCloseKnownPropertiesDialog(
 }
 
 /*
+* supxReadDwordValue
+*
+* Purpose:
+*
+* Tiny helper to read from Registry DWORD value.
+*
+*/
+BOOL supxReadDwordValue(
+    _In_ HKEY hKey,
+    _In_ LPCWSTR lpValueName,
+    _Out_ PDWORD Value
+)
+{
+    DWORD cbData = sizeof(DWORD);
+    DWORD dwType = REG_DWORD;
+
+    if (ERROR_SUCCESS == RegQueryValueEx(hKey,
+        lpValueName,
+        NULL,
+        &dwType,
+        (LPBYTE)Value,
+        &cbData))
+    {
+        return (dwType == REG_DWORD && cbData == sizeof(DWORD));
+    }
+
+    return FALSE;
+}
+
+/*
+* supxWriteDwordValue
+*
+* Purpose:
+*
+* Tiny helper to write into Registry DWORD value.
+*
+*/
+BOOL supxWriteDwordValue(
+    _In_ HKEY hKey,
+    _In_ LPCWSTR lpValueName,
+    _In_ DWORD Value
+)
+{
+    return (ERROR_SUCCESS == RegSetValueEx(hKey,
+        lpValueName,
+        0,
+        REG_DWORD,
+        (LPBYTE)&Value,
+        sizeof(DWORD)));
+}
+
+/*
+* supWriteObexConfiguration
+*
+* Purpose:
+*
+* Writes program configuration data to the registry.
+*
+*/
+_Success_(return)
+BOOL supWriteObexConfiguration(
+    _In_ HWND hwnd
+)
+{
+    HKEY hKey;
+    DWORD value;
+    WINDOWPLACEMENT wp;
+    RECT rc;
+    POBEX_CONFIG config = supGetParametersBlock();
+
+    if (ERROR_SUCCESS != RegCreateKeyEx(HKEY_CURRENT_USER,
+        supObexConfiguration,
+        0,
+        NULL,
+        REG_OPTION_NON_VOLATILE,
+        KEY_WRITE,
+        NULL,
+        &hKey,
+        NULL))
+    {
+        return FALSE;
+    }
+
+    //
+    // Window position and size
+    //
+    RtlSecureZeroMemory(&wp, sizeof(wp));
+    wp.length = sizeof(wp);
+    GetWindowPlacement(hwnd, &wp);
+    rc = wp.rcNormalPosition;
+
+    value = (DWORD)rc.left;
+    supxWriteDwordValue(hKey, supObexWindowX, value);
+
+    value = (DWORD)rc.top;
+    supxWriteDwordValue(hKey, supObexWindowY, value);
+
+    value = (DWORD)(rc.right - rc.left);
+    supxWriteDwordValue(hKey, supObexWindowW, value);
+
+    value = (DWORD)(rc.bottom - rc.top);
+    supxWriteDwordValue(hKey, supObexWindowH, value);
+
+    //
+    // Normalization symbol
+    //
+    supxWriteDwordValue(hKey,
+        supObexNormalizationSymbol,
+        (DWORD)config->szNormalizationSymbol);
+
+    //
+    // Symbol path
+    //
+    if (config->SymbolsPathValid) {
+
+        RegSetValueEx(hKey,
+            supObexSymPath,
+            0,
+            REG_SZ,
+            (LPBYTE)config->szSymbolsPath,
+            ((DWORD)_strlen(config->szSymbolsPath) + 1) * sizeof(WCHAR));
+    }
+
+    //
+    // DbgHelp.dll path
+    //
+    if (config->SymbolsDbgHelpDllValid) {
+
+        RegSetValueEx(hKey,
+            supObexSymDbgHelpDll,
+            0,
+            REG_SZ,
+            (LPBYTE)config->szSymbolsDbgHelpDll,
+            ((DWORD)_strlen(config->szSymbolsDbgHelpDll) + 1) * sizeof(WCHAR));
+    }
+
+    RegCloseKey(hKey);
+
+    return TRUE;
+}
+
+/*
+* supxValidateWindowPlacement
+*
+* Purpose:
+*
+* Sanitizes a WinObjEx64 main window size and position in place.
+*
+*  The target monitor is the one nearest to the window's
+*  saved rect (primary monitor if position is not yet set).
+*
+*/
+VOID supxValidateWindowPlacement(
+    _Inout_ POBEX_CONFIG Configuration
+)
+{
+    BOOL xDefault, yDefault;
+    LONG cxWorkArea, cyWorkArea;
+    LONGLONG right, bottom;
+    HMONITOR hMonitor;
+    POINT pt;
+    MONITORINFO mi;
+    RECT rcWindow;
+
+    //
+    // CW_USEDEFAULT must be consistent for X and Y together.
+    //
+    xDefault = (Configuration->X == CW_USEDEFAULT);
+    yDefault = (Configuration->Y == CW_USEDEFAULT);
+
+    if (xDefault != yDefault) {
+        Configuration->X = CW_USEDEFAULT;
+        Configuration->Y = CW_USEDEFAULT;
+        xDefault = yDefault = TRUE;
+    }
+
+    if (xDefault && yDefault) {
+        pt.x = 0;
+        pt.y = 0;
+        hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
+    }
+    else {
+        rcWindow.left = Configuration->X;
+        rcWindow.top = Configuration->Y;
+        rcWindow.right = Configuration->X + Configuration->Width;
+        rcWindow.bottom = Configuration->Y + Configuration->Height;
+
+        hMonitor = MonitorFromRect(&rcWindow, MONITOR_DEFAULTTONEAREST);
+    }
+
+    mi.cbSize = sizeof(mi);
+    if (!GetMonitorInfo(hMonitor, &mi)) {
+        return;
+    }
+
+    cxWorkArea = mi.rcWork.right - mi.rcWork.left;
+    cyWorkArea = mi.rcWork.bottom - mi.rcWork.top;
+
+    if (Configuration->Width <= 0 || Configuration->Width > cxWorkArea) {
+        Configuration->Width = OBEX_DEFAULT_WIDTH;
+    }
+    if (Configuration->Height <= 0 || Configuration->Height > cyWorkArea) {
+        Configuration->Height = OBEX_DEFAULT_HEIGHT;
+    }
+
+    if (!xDefault && !yDefault) {
+
+        right = (LONGLONG)Configuration->X + Configuration->Width;
+        bottom = (LONGLONG)Configuration->Y + Configuration->Height;
+
+        if (right < mi.rcWork.left ||
+            bottom < mi.rcWork.top ||
+            Configuration->X > mi.rcWork.right ||
+            Configuration->Y > mi.rcWork.bottom)
+        {
+            Configuration->X = CW_USEDEFAULT;
+            Configuration->Y = CW_USEDEFAULT;
+        }
+    }
+}
+
+/*
 * supReadObexConfiguration
 *
 * Purpose:
@@ -9905,24 +10067,32 @@ BOOL supReadObexConfiguration(
         '@', ']', '[', '^', '_', '`',
         '{', '}', '~' };
 
+    //
+    // Default values.
+    //
     Configuration->SymbolsPathValid = FALSE;
     Configuration->SymbolsDbgHelpDllValid = FALSE;
+
     Configuration->szNormalizationSymbol = OBJ_NAME_NORMALIZATION_SYMBOL;
+
+    Configuration->X = CW_USEDEFAULT;
+    Configuration->Y = CW_USEDEFAULT;
+    Configuration->Width = OBEX_DEFAULT_WIDTH;
+    Configuration->Height = OBEX_DEFAULT_HEIGHT;
 
     if (ERROR_SUCCESS == RegOpenKeyEx(HKEY_CURRENT_USER, supObexConfiguration, 0, KEY_READ, &hKey)) {
 
-        cbData = sizeof(DWORD);
-        dwType = REG_DWORD;
-        if (ERROR_SUCCESS == RegQueryValueEx(hKey, supObexNormalizationSymbol,
-            NULL, &dwType, (LPBYTE)&data, &cbData))
-        {
-            if (dwType == REG_DWORD && cbData == sizeof(DWORD)) {
-                symbol = (WCHAR)data;
-                for (i = 0; i < RTL_NUMBER_OF(szValidSymbols); i++) {
-                    if (szValidSymbols[i] == symbol) {
-                        Configuration->szNormalizationSymbol = symbol;
-                        break;
-                    }
+        supxReadDwordValue(hKey, supObexWindowX, (PDWORD)&Configuration->X);
+        supxReadDwordValue(hKey, supObexWindowY, (PDWORD)&Configuration->Y);
+        supxReadDwordValue(hKey, supObexWindowW, (PDWORD)&Configuration->Width);
+        supxReadDwordValue(hKey, supObexWindowH, (PDWORD)&Configuration->Height);
+
+        if (supxReadDwordValue(hKey, supObexNormalizationSymbol, &data)) {
+            symbol = (WCHAR)data;
+            for (i = 0; i < RTL_NUMBER_OF(szValidSymbols); i++) {
+                if (szValidSymbols[i] == symbol) {
+                    Configuration->szNormalizationSymbol = symbol;
+                    break;
                 }
             }
         }
@@ -9952,9 +10122,11 @@ BOOL supReadObexConfiguration(
         }
 
         RegCloseKey(hKey);
+        supxValidateWindowPlacement(Configuration);
         return TRUE;
     }
 
+    supxValidateWindowPlacement(Configuration);
     return FALSE;
 }
 

@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.H
 *
-*  VERSION:     2.11
+*  VERSION:     2.12
 *
-*  DATE:        12 Jul 2026
+*  DATE:        28 Jul 2026
 *
 *  Common header file for the program support routines.
 *
@@ -51,11 +51,19 @@
 #define supObexSymPath              L"SymPath"
 #define supObexSymDbgHelpDll        L"SymDbgHelpDll"
 #define supObexNormalizationSymbol  L"NormalizationSymbol"
+#define supObexWindowX              L"WindowX"
+#define supObexWindowY              L"WindowY"
+#define supObexWindowH              L"WindowH"
+#define supObexWindowW              L"WindowW"
 
 // All relatives to supObexConfiguration
 typedef struct _OBEX_CONFIG {
     BOOLEAN SymbolsPathValid;
     BOOLEAN SymbolsDbgHelpDllValid;
+    INT X;
+    INT Y;
+    INT Width;
+    INT Height;
     WCHAR szNormalizationSymbol;                 //supObexNormalizationSymbol
     WCHAR szSymbolsPath[MAX_PATH + 1];           //supObexSymbolsPath
     WCHAR szSymbolsDbgHelpDll[MAX_PATH + 1];     //supObexSymbolsDbgHelpDll
@@ -425,8 +433,8 @@ BOOL supHeapFree(
 #define supQueryProcessEntryById ntsupQueryProcessEntryById
 #define supWriteBufferToFile ntsupWriteBufferToFile
 #define supQueryVsmProtectionInformation ntsupQueryVsmProtectionInformation
-#define supQueryHVCIState ntsupQueryHVCIState
-#define supLookupImageSectionByName ntsupLookupImageSectionByName
+#define supQueryVBSState ntsupQueryVBSState
+#define supLookupImageSectionByNameEx ntsupLookupImageSectionByNameEx
 #define supFindPattern ntsupFindPattern
 #define supFindPatternEx ntsupFindPatternEx
 #define supOpenProcess ntsupOpenProcess
@@ -456,6 +464,12 @@ BOOL supHeapFree(
 
 #define supQueryThreadInformation(ThreadHandle, ThreadInformationClass, Buffer, ReturnLength) \
     ntsupQueryThreadInformation(ThreadHandle, ThreadInformationClass, Buffer, ReturnLength, supHeapAlloc, supHeapFree)
+
+#define supQueryTokenInformation(TokenHandle, TokenInformationClass, Buffer, ReturnLength) \
+    ntsupQueryTokenInformation(TokenHandle, TokenInformationClass, Buffer, ReturnLength, supHeapAlloc, supHeapFree)
+
+#define supQueryObjectTypesInformation(Buffer, ReturnLength, InitialBufferSize) \
+    ntsupQueryObjectInformationEx(NULL, ObjectTypesInformation, Buffer, ReturnLength, InitialBufferSize, supHeapAlloc, supHeapFree)
 
 FORCEINLINE BOOLEAN supUnicodeStringValid(
     _In_ PUNICODE_STRING SourceString
@@ -1268,6 +1282,10 @@ BOOL supImageFixSections(
 
 VOID supCloseKnownPropertiesDialog(
     _In_opt_ HWND hwndDlg);
+
+_Success_(return)
+BOOL supWriteObexConfiguration(
+    _In_ HWND hwnd);
 
 _Success_(return)
 BOOL supReadObexConfiguration(

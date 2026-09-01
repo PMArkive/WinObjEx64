@@ -264,9 +264,6 @@
     <ClCompile Include="..\Shared\minirtl\_filename.c">
       <Filter>Minirtl</Filter>
     </ClCompile>
-    <ClCompile Include="tests\ntsup_tests.c">
-      <Filter>Source Files\tests</Filter>
-    </ClCompile>
     <ClCompile Include="tests\uitest.c">
       <Filter>Source Files\tests</Filter>
     </ClCompile>
@@ -417,9 +414,6 @@
     </ClInclude>
     <ClInclude Include="..\Shared\minirtl\_filename.h">
       <Filter>Minirtl</Filter>
-    </ClInclude>
-    <ClInclude Include="tests\ntsup_tests.h">
-      <Filter>Source Files\tests</Filter>
     </ClInclude>
     <ClInclude Include="tests\uitest.h">
       <Filter>Source Files\tests</Filter>

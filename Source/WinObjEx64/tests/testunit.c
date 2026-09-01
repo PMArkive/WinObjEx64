@@ -4,9 +4,9 @@
 *
 *  TITLE:       TESTUNIT.C
 *
-*  VERSION:     2.10
+*  VERSION:     2.12
 *
-*  DATE:        10 Feb 2026
+*  DATE:        25 Jul 2026
 *
 *  Test code used while debug.
 *
@@ -25,7 +25,6 @@
 #include <intrin.h>
 #pragma warning(pop)
 #include <aclapi.h>
-#include "ntsup_tests.h"
 
 HANDLE g_TestNamespace = NULL, g_TestMutex = NULL;
 HANDLE g_TestMailslot = NULL;
@@ -1577,11 +1576,6 @@ VOID TestStart(
     PreHashTypes();
     //TestJob();
     //TestDefineDosDevice();
-    Test_WriteBufferToFile();
-    Test_FindModuleNameByAddress();
-    Test_GetLoadedModulesListEx();
-    Test_GetSystemInfoEx();
-    Test_HashImageSections();
     //Test_RegDeleteKeyTree();
 }
 

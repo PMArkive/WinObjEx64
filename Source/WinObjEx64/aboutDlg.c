@@ -193,7 +193,7 @@ VOID AboutDialogInit(
                 }
                 g_kdctx.IsSecureBoot = bSecureBoot;
 
-                if (supQueryHVCIState(&bHVCIEnabled, &bHVCIStrict, &bHVCIIUMEnabled)) {
+                if (supQueryVBSState(&bHVCIIUMEnabled, &bHVCIEnabled, &bHVCIStrict)) {
                     if (bHVCIEnabled) {
                         _strcat(szBuffer, TEXT(", HVCI"));
                         if (bHVCIStrict)

@@ -4,9 +4,9 @@
 *
 *  TITLE:       W32K.C
 *
-*  VERSION:     2.11
+*  VERSION:     2.12
 *
-*  DATE:        22 Jun 2026
+*  DATE:        25 Jul 2026
 *
 *  Win32k syscall table actual handlers resolving routines.
 *
@@ -110,7 +110,8 @@ PBYTE ApiSetFindWin32kApiSetTableRef(
 *
 */
 ULONG_PTR SdtpQueryWin32kApiSetTable(
-    _In_ HMODULE hModule,
+    _In_ HMODULE Win32kModule,
+    _In_ ULONG Win32kModuleSize,
     _In_ PVOID ImageBase,
     _In_ ULONG_PTR ImageSize,
     _In_opt_ SYMCONTEXT* SymContext
@@ -118,7 +119,7 @@ ULONG_PTR SdtpQueryWin32kApiSetTable(
 {
     LONG relativeValue = 0;
     ULONG SectionSize = 0, Index;
-    PBYTE ptrCode = (PBYTE)hModule;
+    PBYTE ptrCode = (PBYTE)Win32kModule;
     PVOID SectionBase;
     ULONG_PTR tableAddress = 0, instructionLength = 0;
     hde64s hs;
@@ -131,7 +132,7 @@ ULONG_PTR SdtpQueryWin32kApiSetTable(
             ImageSize,
             &tableAddress))
         {
-            tableAddress = tableAddress - (ULONG_PTR)ImageBase + (ULONG_PTR)hModule;
+            tableAddress = tableAddress - (ULONG_PTR)ImageBase + (ULONG_PTR)Win32kModule;
         }
 
     }
@@ -141,9 +142,10 @@ ULONG_PTR SdtpQueryWin32kApiSetTable(
         //
         // Locate .text image section as required variable is always in .text.
         //
-        SectionBase = supLookupImageSectionByName(TEXT_SECTION,
+        SectionBase = supLookupImageSectionByNameEx(TEXT_SECTION,
             TEXT_SECTION_LENGTH,
-            (PVOID)hModule,
+            (PVOID)Win32kModule,
+            Win32kModuleSize,
             &SectionSize);
 
         if (SectionBase == 0 || SectionSize == 0)
@@ -192,8 +194,8 @@ ULONG_PTR SdtpQueryWin32kApiSetTable(
         // Sanity check.
         //
         tableAddress = (ULONG_PTR)ptrCode + Index + instructionLength + relativeValue;
-        if (tableAddress < (ULONG_PTR)hModule ||
-            tableAddress >= ((ULONG_PTR)hModule + ImageSize))
+        if (tableAddress < (ULONG_PTR)Win32kModule ||
+            tableAddress >= ((ULONG_PTR)Win32kModule + ImageSize))
         {
             return 0;
         }
@@ -725,22 +727,22 @@ NTSTATUS SdtResolveModuleFromImportThunk(
         pFuncThunk = (PIMAGE_THUNK_DATA)((ULONG_PTR)FunctionPtr + hs.len + rel);
 
         pImportDescriptor = (PIMAGE_IMPORT_DESCRIPTOR)RtlImageDirectoryEntryToData(
-            Context->KernelModule,
+            Context->MappedKernelModule,
             TRUE,
             IMAGE_DIRECTORY_ENTRY_IMPORT,
             &importSize);
 
         for (pIID = pImportDescriptor; pIID->Name != 0; pIID++) {
 
-            pOrigFirstThunk = (PIMAGE_THUNK_DATA)RtlOffsetToPointer(Context->KernelModule, pIID->OriginalFirstThunk);
-            pFirstThunk = (PIMAGE_THUNK_DATA)RtlOffsetToPointer(Context->KernelModule, pIID->FirstThunk);
+            pOrigFirstThunk = (PIMAGE_THUNK_DATA)RtlOffsetToPointer(Context->MappedKernelModule, pIID->OriginalFirstThunk);
+            pFirstThunk = (PIMAGE_THUNK_DATA)RtlOffsetToPointer(Context->MappedKernelModule, pIID->FirstThunk);
 
             for (; pOrigFirstThunk->u1.AddressOfData; ++pOrigFirstThunk, ++pFirstThunk) {
-                pImageImportByName = (PIMAGE_IMPORT_BY_NAME)RtlOffsetToPointer(Context->KernelModule,
+                pImageImportByName = (PIMAGE_IMPORT_BY_NAME)RtlOffsetToPointer(Context->MappedKernelModule,
                     pOrigFirstThunk->u1.AddressOfData);
 
                 if (pFirstThunk == pFuncThunk) {
-                    pszDllName = (LPCSTR)RtlOffsetToPointer(Context->KernelModule, pIID->Name);
+                    pszDllName = (LPCSTR)RtlOffsetToPointer(Context->MappedKernelModule, pIID->Name);
 
                     return SdtMapModuleFromImportThunkWithResolve(
                         pszDllName,
@@ -1118,6 +1120,7 @@ ULONG SdtWin32kInitializeOnce(
     ULONG ulResult = 0, schemaVersion;
     ULONG_PTR varAddress;
     PULONG pKernelLimit;
+    PLDR_DATA_TABLE_ENTRY pMappedModule;
     PRTL_PROCESS_MODULE_INFORMATION pModule;
     HANDLE heapHandle;
     HMODULE hModule;
@@ -1189,7 +1192,12 @@ ULONG SdtWin32kInitializeOnce(
             ulResult = ErrShadowWin32kLoadFail;
             break;
         }
-        Context->KernelModule = hModule;
+        Context->MappedKernelModule = hModule;
+        if (!NT_SUCCESS(LdrFindEntryForAddress(hModule, &pMappedModule))) {
+            ulResult = ErrShadowWin32kLoadFail;
+            break;
+        }
+        Context->MappedKernelModuleSize = pMappedModule->SizeOfImage;
 
         //
         // Check whatever win32u is compatible with win32k data, compare number of services.
@@ -1209,7 +1217,7 @@ ULONG SdtWin32kInitializeOnce(
         // Query win32k!W32pServiceTable, calculate it kernel address.
         //
         RtlSecureZeroMemory(&resolveInfo, sizeof(RESOLVE_INFO));
-        if (!NT_SUCCESS(NtRawGetProcAddress(Context->KernelModule, "W32pServiceTable", &resolveInfo))) {
+        if (!NT_SUCCESS(NtRawGetProcAddress(Context->MappedKernelModule, "W32pServiceTable", &resolveInfo))) {
             ulResult = ErrShadowW32pServiceTableNotFound;
             break;
         }
@@ -1217,7 +1225,7 @@ ULONG SdtWin32kInitializeOnce(
         Context->W32pServiceTableUserBase = (PULONG)resolveInfo.Function;
 
         Context->W32pServiceTableKernelBase =
-            Context->KernelBaseAddress + (ULONG_PTR)resolveInfo.Function - (ULONG_PTR)Context->KernelModule;
+            Context->KernelBaseAddress + (ULONG_PTR)resolveInfo.Function - (ULONG_PTR)Context->MappedKernelModule;
 
         //
         // Find Win32kApiSetTable where needed.
@@ -1259,7 +1267,6 @@ ULONG SdtWin32kInitializeOnce(
             if (Context->ApiSetSessionAware) {
 
                 logAdd(EntryTypeInformation, TEXT("Session aware ApiSet parsing expected"));
-
 
                 Context->W32GetSessionStatePtr = (ULONG_PTR)GetProcAddress(hModule, "W32GetSessionState");
                 if (Context->W32GetSessionStatePtr == 0) {
@@ -1310,7 +1317,7 @@ ULONG SdtWin32kInitializeOnce(
                 //
                 // Remember table offset.
                 //
-                Context->Win32kApiSetTableOffset = SdtpQueryW32GetWin32kApiSetTableOffset(Context->KernelModule);
+                Context->Win32kApiSetTableOffset = SdtpQueryW32GetWin32kApiSetTableOffset(Context->MappedKernelModule);
                 if (Context->Win32kApiSetTableOffset == 0) {
                     ulResult = ErrShadowWin32kOffsetNotFound;
                     break;
@@ -1324,7 +1331,9 @@ ULONG SdtWin32kInitializeOnce(
                 // This is old win32k layout.
                 // Locate Win32kApiSetTable variable. Failure will result in unresolved apiset adapters.
                 //
-                Context->Win32kApiSetTable = SdtpQueryWin32kApiSetTable(Context->KernelModule,
+                Context->Win32kApiSetTable = SdtpQueryWin32kApiSetTable(
+                    Context->MappedKernelModule,
+                    Context->MappedKernelModuleSize,
                     (PVOID)Context->KernelBaseAddress,
                     Context->KernelImageSize,
                     symContext);
@@ -1363,13 +1372,13 @@ ULONG SdtWin32kInitializeOnce(
         if (ulResult != ErrShadowApiSetNotFound) {
 
 
-            if (Context->KernelModule)
-                FreeLibrary(Context->KernelModule);
+            if (Context->MappedKernelModule)
+                FreeLibrary(Context->MappedKernelModule);
 
             if (Context->ExportsEnumHeap)
                 supDestroyHeap(Context->ExportsEnumHeap);
 
-            Context->KernelModule = NULL;
+            Context->MappedKernelModule = NULL;
             Context->ExportsEnumHeap = NULL;
         }
 
@@ -1389,8 +1398,8 @@ ULONG SdtWin32kInitializeOnce(
 VOID SdtWin32kUninitialize(
     _In_ PSDT_CONTEXT Context)
 {
-    if (Context->KernelModule)
-        FreeLibrary(Context->KernelModule);
+    if (Context->MappedKernelModule)
+        FreeLibrary(Context->MappedKernelModule);
 
     if (Context->ExportsEnumHeap)
         supDestroyHeap(Context->ExportsEnumHeap);
